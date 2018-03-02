@@ -1,0 +1,69 @@
+Osoba muze projit konkretnimi dvermi nebo ne.
+
+To by mohlo byt zavisle na:
+- stavu v budove (napr. kdyz je emergency nebo je nekde nejaky meeting,
+  tak mohu projit)
+- casu
+  system zkontroluje, zda dana osoba ma
+- pohybu ostatnich osob - napr. s nejakou osobou se nesmim za zadnych
+  okolnosti setkat nebo se nesmim nachazet v prostoru, kde se zrovna
+  resi nejaky projekt (nebo je nejaky meeting).
+
+- Asi by bylo dobre zminit, ze se jedna o zjednoduseni - dvere by komunikovaly
+  s dalsim systemem (zde zjednodusejeme jako kdyby overovani probihalo primo
+  na dverich).
+
+Use case: A person tries to pass trough a door
+
+Primary Actor: A person trying to pass through a door
+
+Stakeholders and Interests:
+Person trying to pass through door
+Door - door with an authentication device connected to security system
+
+Main success scenario:
+1. A person tries to open the door.
+2. The door validates the open request with:
+  - Building-wide policy (emergency, pass to meeting)
+  - Time-spacial constraints
+3. The door allows passage.
+
+Extensions:
+2a. The system is in emergency mode.
+  1a1. The door allows passage.
+
+2b. The
+
+2a. The system checks
+
+2a. The system refuses
+  2a1. The door informs the person that the request was rejected.
+  2a2. The door remains closed.
+
+---
+
+Primary Actor: Door
+
+Stakeholders and Interests:
+Door
+Security system
+
+Main success scenario:
+
+
+- prava pozitivni i negativni
+- ansamble pro zachyceni dynamicke situace, co musi platit
+- ansamble kdyz jsi u me, nejsi dohromady s nekym jinym
+- ansamble clovek a dvere
+- nesmi byt clovek v ansamblu s dvermi a chodbou...
+- ansamble clovek-mistnost, druhy ansamble clovek-mistnost, pravidlo ze dva dani lide nesmi byt ve stejne mistnosti
+
+- modelovat stav u komponent, ktere nemame pod kontrolou (pouziti solveru), modelovani zameru
+
+komponenty:
+- mistnosti
+- dvere - referencuje mistnosti
+- lidi
+
+ensembly:
+- clovek a dvere
