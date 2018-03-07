@@ -67,3 +67,9 @@ komponenty:
 
 ensembly:
 - clovek a dvere
+
+
+Person wants to enter the room (simulated step)
+A PersonToEnterTheRoom ensemble is created between the person and the room
+The ensemble uses EmergencyModeDoors and AvoidRoles ensembles to check
+The door are either opened or not depending on the result of the membership function
