@@ -20,6 +20,18 @@ class RoleMembersStatic[+ComponentType <: Component](values: Iterable[ComponentT
     new RoleMembersStatic[RoleType](comps)
   }
 
+  def filter(filter: ComponentType => Boolean): RoleMembersStatic[ComponentType] = {
+    val comps = mutable.ListBuffer.empty[ComponentType]
+
+    for (value <- values) {
+      if (filter(value)) {
+        comps += value
+      }
+    }
+
+    new RoleMembersStatic[ComponentType](comps)
+  }
+
   def ++[B >: ComponentType <: Component](other: RoleMembersStatic[B]): RoleMembersStatic[B] =
     new RoleMembersStatic(values ++ other.values)
 
