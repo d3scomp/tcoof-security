@@ -165,7 +165,7 @@ class SecurityScenario extends Model {
 //    val teamBLunchRooms = ensembles("Team B lunch rooms", components.select[LunchRoom].map(new AssignRooms(_, Team.TeamB, PersonMode.Eat)))
 
     // TODO - add and use foreach instead of map
-    teamAWorkingRooms.map(teamA => teamA.membership{ !teamBWorkingRooms.selectedMembers.exists(_.room == teamA.room) })
+//    teamAWorkingRooms.map(teamA => teamA.membership{ !teamBWorkingRooms.selectedMembers.exists(_.room == teamA.room) })
 
     membership {
       // - every person can be assigned only to one room
