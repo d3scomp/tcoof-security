@@ -10,8 +10,6 @@ class SecurityScenario extends Model {
   // components
   //
 
-  class Building(val rooms: Set[Room], val doors: Set[Door]) extends Component
-
   abstract class Room(name: String, val capacity: Int) extends Component {
     name(name)
   }
@@ -25,6 +23,7 @@ class SecurityScenario extends Model {
   class Door(val srcRoom: Room, val tgtRoom: Room) extends Component {
     def enter(person: Person): Boolean = {
 
+      /*
       // check with ensembles whether the person can enter or not
 
       val rootEnsemble = root(new PersonToEnterTheRoom(person, tgtRoom))
@@ -35,7 +34,7 @@ class SecurityScenario extends Model {
       }
       rootEnsemble.commit()
       println(rootEnsemble.instance.solutionUtility)
-
+*/
       true
     }
   }
@@ -48,24 +47,24 @@ class SecurityScenario extends Model {
     val Work, Eat = Value  // + Sleep, but it is basically the same as the other modes
   }
 
-  class Person(name: String, val team: Team.Value, var position: Room, val doors: Set[Door]) extends Component {
+  class Person(name: String, val team: Team.Value, var position: Room, val doors: Iterable[Door]) extends Component {
     name(name)
     var mode: PersonMode.Value = PersonMode.Work
     var targetRoom: Option[Room] = None
 
     def act(): Unit = {
-      val doorsFromRoom = doors.filter(_.srcRoom == position)
-
-      // door to open is selected randomly
-      val selectedDoor = doorsFromRoom.toList(random.nextInt(doorsFromRoom.size))
-
-      println(s"$name trying to move from ${selectedDoor.srcRoom} to ${selectedDoor.tgtRoom}")
-      if (selectedDoor.enter(this)) {
-        position = selectedDoor.tgtRoom
-        println(s"$name moved from ${selectedDoor.srcRoom} to ${selectedDoor.tgtRoom}")
-      } else {
-        println(s"$name unable to move from ${selectedDoor.srcRoom} to ${selectedDoor.tgtRoom}")
-      }
+//      val doorsFromRoom = doors.filter(_.srcRoom == position)
+//
+//      // door to open is selected randomly
+//      val selectedDoor = doorsFromRoom.toList(random.nextInt(doorsFromRoom.size))
+//
+//      println(s"$name trying to move from ${selectedDoor.srcRoom} to ${selectedDoor.tgtRoom}")
+//      if (selectedDoor.enter(this)) {
+//        position = selectedDoor.tgtRoom
+//        println(s"$name moved from ${selectedDoor.srcRoom} to ${selectedDoor.tgtRoom}")
+//      } else {
+//        println(s"$name unable to move from ${selectedDoor.srcRoom} to ${selectedDoor.tgtRoom}")
+//      }
     }
   }
 
@@ -73,6 +72,7 @@ class SecurityScenario extends Model {
   // ensembles
   //
 
+  /*
   // In the given room a person with the role "personRole" cannot meet a person with the role "toAvoid".
   // NOTE: The relation is not symmetric.
   class AvoidRoles(room: Room, personRole: Team.Value, toAvoid: Team.Value) extends Ensemble {
@@ -136,18 +136,19 @@ class SecurityScenario extends Model {
 
   // TODO - place somewhere else?
   var avoidRoles: List[(Room, Team.Value, Team.Value)] = _
-
-  class AssignRooms(room: Room, team: Team.Value, personMode: PersonMode.Value) extends Ensemble {
+*/
+  class AssignRooms(val room: Room, team: Team.Value, personMode: PersonMode.Value) extends Ensemble {
     name(s"Persons for room $room")
 
-    // TODO - components can be filtered first by values that do not change (team), now it is done in membership function
-    val persons = role(s"Persons for room $room", components.select[Person])
+    // components are filtered first by values that do not change (team)
+    val persons = role(s"Persons for room $room", components.select[Person].filter(p => p.team == team))
+    // TODO - not ellegant
+    //val assignedRoom = role(s"Assigned room $room", components.select[Room].filter(r => r == room))
 
     membership {
-      // - all the persons must be from the same team
       // - all the persons must be in mode personMode
       // - number of persons in room must not exceed room capacity
-      persons.all(p => p.team == team && p.mode == personMode) && persons.cardinality <= room.capacity
+      persons.all(_.mode == personMode) && persons.cardinality <= room.capacity
     }
 
     utility {
@@ -155,27 +156,40 @@ class SecurityScenario extends Model {
     }
   }
 
-  class System(workingPlaces: Iterable[WorkingPlace], lunchRooms: Iterable[LunchRoom]) extends RootEnsemble {
+  class System extends RootEnsemble {
 
-    val teamAWorkingRooms = ensembles("Team A working rooms", workingPlaces.map(new AssignRooms(_, Team.TeamA, PersonMode.Work)))
-    val teamBWorkingRooms = ensembles("Team B working rooms", workingPlaces.map(new AssignRooms(_, Team.TeamB, PersonMode.Work)))
-    val teamALunchRooms = ensembles("Team A lunch rooms", lunchRooms.map(new AssignRooms(_, Team.TeamA, PersonMode.Eat)))
-    val teamBLunchRooms = ensembles("Team B lunch rooms", lunchRooms.map(new AssignRooms(_, Team.TeamB, PersonMode.Eat)))
+    val teamAWorkingRooms = ensembles("Team A working rooms", components.select[WorkingPlace].map(new AssignRooms(_, Team.TeamA, PersonMode.Work)))
+    val teamBWorkingRooms = ensembles("Team B working rooms", components.select[WorkingPlace].map(new AssignRooms(_, Team.TeamB, PersonMode.Work)))
+
+//    val teamALunchRooms = ensembles("Team A lunch rooms", components.select[LunchRoom].map(new AssignRooms(_, Team.TeamA, PersonMode.Eat)))
+//    val teamBLunchRooms = ensembles("Team B lunch rooms", components.select[LunchRoom].map(new AssignRooms(_, Team.TeamB, PersonMode.Eat)))
+
+    // TODO - add and use foreach instead of map
+    teamAWorkingRooms.map(teamA => teamA.membership{ !teamBWorkingRooms.selectedMembers.exists(_.room == teamA.room) })
 
     membership {
       // - every person can be assigned only to one room
-      (teamAWorkingRooms.map(_.persons) ++ teamBWorkingRooms.map(_.persons) ++ teamALunchRooms.map(_.persons) ++ teamBLunchRooms.map(_.persons)).allDisjoint
+      // - room can be assigned to at most one team
+
+      // TODO: this doesn't behave as expected - probably cannot concat iterables, must create ensemble
+      //(teamAWorkingRooms.map(_.persons) ++ teamBWorkingRooms.map(_.persons)).allDisjoint
+
+      teamAWorkingRooms.map(_.persons).allDisjoint && teamBWorkingRooms.map(_.persons).allDisjoint //&&
+      //(teamAWorkingRooms.map(_.assignedRoom) ++ teamBWorkingRooms.map(_.assignedRoom)).allDisjoint
+        //teamAWorkingRooms.map(_.assignedRoom).allDisjoint(teamBWorkingRooms.map(_.assignedRoom))
+
+
+      //&& (teamAWorkingRooms.map(_.assignedRoom) ++ teamBWorkingRooms.map(_.assignedRoom)).allDisjoint
+
+
+      //true
     }
   }
 
-  var rootEnsemble: RootEnsembleAnchor[System] = _
-
-  def createRootEnsemble(workingPlaces: Iterable[WorkingPlace], lunchRooms: Iterable[LunchRoom]): Unit = {
-    rootEnsemble = root(new System(workingPlaces, lunchRooms))
-  }
+  val rootEnsemble: RootEnsembleAnchor[System] = root(new System)
 }
 
-object TestScenario {
+object SecurityScenario {
   def main(args: Array[String]): Unit = {
     val scenario = new SecurityScenario
     scenario.init()
@@ -201,29 +215,29 @@ object TestScenario {
     // into working and lunch places, people from one team should avoid people from
     // the other one.
 
-    val lunchRooms = List((1, 3), (2, 3), (3, 3)).map{case (i, capacity) => new scenario.LunchRoom(s"L$i", capacity)}
-    val workingRooms = List((1, 2), (2, 3), (3, 4)).map{case (i, capacity) => new scenario.WorkingPlace(s"W$i", capacity)}
-    val corridors = (1 to 3).map(i => new scenario.Corridor(s"C$i"))
+    //val lunchRooms = List((1, 3), (2, 3), (3, 3)).map{case (i, capacity) => new scenario.LunchRoom(s"L$i", capacity)}
+    val lunchRooms: List[scenario.LunchRoom] = List()
+    val workingRooms = List((1, 3), (2, 3), (3, 3)).map{case (i, capacity) => new scenario.WorkingPlace(s"W$i", capacity)}
+    //val corridors = (1 to 3).map(i => new scenario.Corridor(s"C$i"))
 
     // Note that exterior is not part of the building
-    val rooms = (lunchRooms ++ workingRooms ++ corridors).toSet
+    val rooms = lunchRooms ++ workingRooms /* ++ corridors */
 
-    val doors = List(
-      (lunchRooms(0), corridors(0)), (lunchRooms(1), corridors(1)), (lunchRooms(2), corridors(2)),
-      (workingRooms(0), corridors(0)), (workingRooms(1), corridors(1)), (workingRooms(2), corridors(2)),
-      (corridors(0), corridors(1)), (corridors(1), corridors(2)),
-      (scenario.Exterior, corridors(0))
-    ).flatMap{case (r1, r2) => List(new scenario.Door(r1, r2), new scenario.Door(r2, r1))}.toSet
+//    val doors = List(
+//      (lunchRooms(0), corridors(0)), (lunchRooms(1), corridors(1)), (lunchRooms(2), corridors(2)),
+//      (workingRooms(0), corridors(0)), (workingRooms(1), corridors(1)), (workingRooms(2), corridors(2)),
+//      (corridors(0), corridors(1)), (corridors(1), corridors(2)),
+//      (scenario.Exterior, corridors(0))
+//    ).flatMap{case (r1, r2) => List(new scenario.Door(r1, r2), new scenario.Door(r2, r1))}
 
-    val building = new scenario.Building(rooms, doors)
+    val doors: List[scenario.Door] = List()
 
-    val teamA = (1 to 4).map(i => new scenario.Person(s"Person A$i", scenario.Team.TeamA, scenario.Exterior, doors))
-    val teamB = (1 to 4).map(i => new scenario.Person(s"Person B$i", scenario.Team.TeamB, scenario.Exterior, doors))
+    val teamA = (1 to 10).map(i => new scenario.Person(s"Person A$i", scenario.Team.TeamA, scenario.Exterior, doors))
+    val teamB = (1 to 5).map(i => new scenario.Person(s"Person B$i", scenario.Team.TeamB, scenario.Exterior, doors))
 
     val persons = teamA ++ teamB
 
-    scenario.components = List(building) ++ persons
-    scenario.createRootEnsemble(workingRooms, lunchRooms)
+    scenario.components = rooms ++ doors ++ persons
 
     // avoid meeting of TeamA and TeamB in lunch rooms and working rooms
 //    scenario.avoidRoles = (lunchRooms ++ workingRooms).flatMap(r =>
@@ -234,13 +248,14 @@ object TestScenario {
     println("System initialized")
 
     while (scenario.rootEnsemble.solve()) {
-      println(scenario.rootEnsemble.instance.toString)
+      println(scenario.rootEnsemble.instance.toStringWithUtility)
     }
 
     scenario.rootEnsemble.commit()
 
     println(scenario.rootEnsemble.instance.solutionUtility)
 
+//    scenario.rootEnsemble.instance.toStringWithUtility
 
     // Simulation - each person decides to either stay in the room or move to another room.
 //    for (t <- 0 until 10) {
