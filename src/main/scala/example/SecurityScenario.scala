@@ -137,7 +137,7 @@ class SecurityScenario extends Model {
   // TODO - place somewhere else?
   var avoidRoles: List[(Room, Team.Value, Team.Value)] = _
 */
-  class AssignRooms(val room: Room, team: Team.Value, personMode: PersonMode.Value) extends Ensemble {
+  class AssignRooms(val room: Room, val team: Team.Value, val personMode: PersonMode.Value) extends Ensemble {
     name(s"Persons for room $room")
 
     // components are filtered first by values that do not change (team)
@@ -161,28 +161,21 @@ class SecurityScenario extends Model {
     val teamAWorkingRooms = ensembles("Team A working rooms", components.select[WorkingPlace].map(new AssignRooms(_, Team.TeamA, PersonMode.Work)))
     val teamBWorkingRooms = ensembles("Team B working rooms", components.select[WorkingPlace].map(new AssignRooms(_, Team.TeamB, PersonMode.Work)))
 
-//    val teamALunchRooms = ensembles("Team A lunch rooms", components.select[LunchRoom].map(new AssignRooms(_, Team.TeamA, PersonMode.Eat)))
-//    val teamBLunchRooms = ensembles("Team B lunch rooms", components.select[LunchRoom].map(new AssignRooms(_, Team.TeamB, PersonMode.Eat)))
-
-    // TODO - add and use foreach instead of map
-//    teamAWorkingRooms.map(teamA => teamA.membership{ !teamBWorkingRooms.selectedMembers.exists(_.room == teamA.room) })
+    val teamALunchRooms = ensembles("Team A lunch rooms", components.select[LunchRoom].map(new AssignRooms(_, Team.TeamA, PersonMode.Eat)))
+    val teamBLunchRooms = ensembles("Team B lunch rooms", components.select[LunchRoom].map(new AssignRooms(_, Team.TeamB, PersonMode.Eat)))
 
     membership {
       // - every person can be assigned only to one room
       // - room can be assigned to at most one team
 
       // TODO: this doesn't behave as expected - probably cannot concat iterables, must create ensemble
-      //(teamAWorkingRooms.map(_.persons) ++ teamBWorkingRooms.map(_.persons)).allDisjoint
+//      (teamAWorkingRooms.map(_.persons) ++ teamBWorkingRooms.map(_.persons)).allDisjoint //&&
+      teamAWorkingRooms.map(_.persons).allDisjoint && teamBWorkingRooms.map(_.persons).allDisjoint &&
+      teamAWorkingRooms.disjointAfterMap(_.room, teamBWorkingRooms, (x: AssignRooms) => x.room)
+      //teamAWorkingRooms.disjointAfterMap(_.room, teamBWorkingRooms, (x: AssignRooms => x.room))
+      //(teamAWorkingRooms.map(_.persons) ++ teamAWorkingRooms.map(_.persons)).allDisjoint //&&
+//      (teamALunchRooms.map(_.persons) ++ teamALunchRooms.map(_.persons)).allDisjoint
 
-      teamAWorkingRooms.map(_.persons).allDisjoint && teamBWorkingRooms.map(_.persons).allDisjoint //&&
-      //(teamAWorkingRooms.map(_.assignedRoom) ++ teamBWorkingRooms.map(_.assignedRoom)).allDisjoint
-        //teamAWorkingRooms.map(_.assignedRoom).allDisjoint(teamBWorkingRooms.map(_.assignedRoom))
-
-
-      //&& (teamAWorkingRooms.map(_.assignedRoom) ++ teamBWorkingRooms.map(_.assignedRoom)).allDisjoint
-
-
-      //true
     }
   }
 
@@ -215,7 +208,7 @@ object SecurityScenario {
     // into working and lunch places, people from one team should avoid people from
     // the other one.
 
-    //val lunchRooms = List((1, 3), (2, 3), (3, 3)).map{case (i, capacity) => new scenario.LunchRoom(s"L$i", capacity)}
+//    val lunchRooms = List((1, 3), (2, 3), (3, 3)).map{case (i, capacity) => new scenario.LunchRoom(s"L$i", capacity)}
     val lunchRooms: List[scenario.LunchRoom] = List()
     val workingRooms = List((1, 3), (2, 3), (3, 3)).map{case (i, capacity) => new scenario.WorkingPlace(s"W$i", capacity)}
     //val corridors = (1 to 3).map(i => new scenario.Corridor(s"C$i"))
@@ -232,7 +225,7 @@ object SecurityScenario {
 
     val doors: List[scenario.Door] = List()
 
-    val teamA = (1 to 10).map(i => new scenario.Person(s"Person A$i", scenario.Team.TeamA, scenario.Exterior, doors))
+    val teamA = (1 to 5).map(i => new scenario.Person(s"Person A$i", scenario.Team.TeamA, scenario.Exterior, doors))
     val teamB = (1 to 5).map(i => new scenario.Person(s"Person B$i", scenario.Team.TeamB, scenario.Exterior, doors))
 
     val persons = teamA ++ teamB

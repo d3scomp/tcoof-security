@@ -3,6 +3,8 @@ package tcof
 import tcof.InitStages.InitStages
 import org.chocosolver.solver.variables.SetVar
 
+import scala.reflect.ClassTag
+
 trait WithMembers[+MemberType] extends WithConfig with Initializable {
 
   private[tcof] def allMembers: Members[MemberType]
@@ -31,6 +33,30 @@ trait WithMembers[+MemberType] extends WithConfig with Initializable {
 
   def some(fun: MemberType => Logical): Logical =
     _solverModel.existsSelected(allMembers.values.map(fun), allMembersVar)
+
+  def disjointAfterMap[OtherMemberType, T: ClassTag](funThis: MemberType => T , other: WithMembers[OtherMemberType], funOther: OtherMemberType => T): Logical = {
+    val thisValues = allMembers.map(funThis)
+    val otherValues = other.allMembers.map(funOther)
+
+    val allMap = thisValues.toSet.union(otherValues.toSet).zipWithIndex.toMap
+
+    val thisVar = _solverModel.setVar(Array.empty[Int], thisValues.map(allMap(_)).toArray)
+    val otherVar = _solverModel.setVar(Array.empty[Int], otherValues.map(allMap(_)).toArray)
+
+    val thisMembers = thisValues.zipWithIndex
+    for ((member, idx) <- thisMembers) {
+      _solverModel.ifOnlyIf(_solverModel.member(idx, allMembersVar), _solverModel.member(allMap(member), thisVar))
+    }
+
+    val otherMembers = otherValues.zipWithIndex
+    for ((member, idx) <- otherMembers) {
+      _solverModel.ifOnlyIf(_solverModel.member(idx, other.allMembersVar), _solverModel.member(allMap(member), otherVar))
+    }
+
+    LogicalBoolVar(_solverModel.disjoint(thisVar, otherVar).reify())
+  }
+
+
 
   def foreachBySelection(forSelected: MemberType => Unit, forNotSelected: MemberType => Unit): Unit = {
     val selection = _solverModel.solution.getSetVal(allMembersVar)
