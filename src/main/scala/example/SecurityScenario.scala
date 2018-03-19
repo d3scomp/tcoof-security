@@ -24,20 +24,8 @@ class SecurityScenario extends Model {
   // serves as an one-way edge between room-nodes
   class Door(val srcRoom: Room, val tgtRoom: Room) extends Component {
     def enter(person: Person): Boolean = {
-
-      /*
-      // check with ensembles whether the person can enter or not
-
-      val rootEnsemble = root(new PersonToEnterTheRoom(person, tgtRoom))
-      rootEnsemble.init()
-      rootEnsemble.solve()
-      while (rootEnsemble.solve()) {
-        println(rootEnsemble.instance.toString)
-      }
-      rootEnsemble.commit()
-      println(rootEnsemble.instance.solutionUtility)
-*/
-      true
+      val personToEnterTheRoom = new PersonToEnterTheRoom(person, tgtRoom)
+      personToEnterTheRoom.isAllowedToEnter
     }
   }
 
@@ -88,73 +76,31 @@ class SecurityScenario extends Model {
     }
   }
 
+
+  //
+  // rules checked by door when person is about to enter the room
+  //
+
+  var avoidTeamRules: List[AvoidTeamRule] = _
+
+  // Class representing the rule - in the given room a person with the role
+  // "personRole" cannot meet a person with the role "toAvoid".
+  case class AvoidTeamRule(room: Room, personTeam: Team.Value, toAvoid: Team.Value)
+
+  class PersonToEnterTheRoom(person: Person, room: Room) {
+    def isAllowedToEnter: Boolean = {
+      val teamsInRoom = components.collect{ case p: Person => p }.filter(_.position == room).map(_.team).toSet
+      avoidTeamRules.exists {
+        case AvoidTeamRule(`room`, person.team, teamToAvoid) => teamsInRoom.contains(teamToAvoid)
+        case _ => false
+      }
+    }
+  }
+
   //
   // ensembles
   //
 
-  /*
-  // In the given room a person with the role "personRole" cannot meet a person with the role "toAvoid".
-  // NOTE: The relation is not symmetric.
-  class AvoidRoles(room: Room, personRole: Team.Value, toAvoid: Team.Value) extends Ensemble {
-    val persons = role("allPersons", components.select[Person])
-
-//    membership(
-//      //persons.all()
-//    )
-  }
-
-  // An ensemble between the given room and all persons within that room.
-  class PersonsInRoom(room: Room) extends Ensemble {
-    val persons = role("allPersonsInRoom",
-      components.collect{ case p: Person => p }.filter(_.position == room))
-
-    // alternative - use membership function
-//    val persons = role("allPersons", components.select[Person])
-//    membership(
-//      persons.all(_.position == room)
-//    )
-  }
-
-  class PersonToEnterTheRoom(person: Person, room: Room) extends RootEnsemble {
-    val personsInRoom = new PersonsInRoom(room)
-
-    // all avoidance rules which apply to given room and roles of the given person
-//    val toAvoid = ensembles("RolesInRoomToAvoid", avoidRoles.map(x => new AvoidRoles(x._1, x._2, x._3))
-//          .filter(r => r.room == room)
-//          .filter(r => person.roles.contains(r.personRole))
-//    )
-
-    val rolesInRoomToAvoid = avoidRoles.filter(x => x._1 == room)
-                                       .filter(x => person.team == x._2)
-                                       .map(_._3).toSet
-
-//    val rolesInRoom = personsInRoom.persons.
-
-    membership(
-      // TODO - add emergency mode
-      // check whether person with its role can enter the room - need access to AvoidRoles rules
-      // which are set from outside
-
-      // all the roles of the persons in room
-//      personsInRoom.persons.allMembers.values.flatMap(_.roles).toSet
-//      (personsInRoom.persons.values.flatMap(_.roles).toSet
-//      intersect
-//      toAvoid.map(_.allMembers).map(_.toAvoid))
-//        .isEmpty
-
-//      rolesInRoomToAvoid
-
-
-      // roles to avoid
-      //toAvoid.allMembers.map(_.toAvoid)
-
-
-
-      true
-    )
-  }
-
-*/
   class AssignRooms(val room: Room, val team: Team.Value, val personMode: PersonMode.Value) extends Ensemble {
     name(s"Persons for room $room")
 
@@ -204,10 +150,8 @@ class SecurityScenario extends Model {
     val rooms = components.collect{case r: Room => r}
     val doors = components.collect{case d: Door => d}
 
-    for (r1 <- rooms) {
-      for (r2 <- rooms) {
-        dist += (r1, r2) -> 10000
-      }
+    for (r1 <- rooms; r2 <- rooms) {
+      dist += (r1, r2) -> 10000
     }
 
     for (door <- doors) {
@@ -215,14 +159,10 @@ class SecurityScenario extends Model {
       next += (door.srcRoom, door.tgtRoom) -> door
     }
 
-    for (k <- rooms) {
-      for (i <- rooms) {
-        for (j <- rooms) {
-          if (dist(i, j) > dist(i, k) + dist(k, j)) {
-            dist += (i, j) -> (dist(i, k) + dist(k, j))
-            next += (i, j) -> next(i, k)
-          }
-        }
+    for (k <- rooms; i <- rooms; j<- rooms) {
+      if (dist(i, j) > dist(i, k) + dist(k, j)) {
+        dist += (i, j) -> (dist(i, k) + dist(k, j))
+        next += (i, j) -> next(i, k)
       }
     }
   }
@@ -242,10 +182,8 @@ class SecurityScenario extends Model {
       rootEnsemble.instance.teamBLunchRooms
     )
 
-    for (group <- groups) {
-      for (assignedRoom <- group.selectedMembers) {
-        assignedRoom.persons.selectedMembers.foreach(_.targetRoom = Some(assignedRoom.room))
-      }
+    for (group <- groups; assignedRoom <- group.selectedMembers) {
+      assignedRoom.persons.selectedMembers.foreach(_.targetRoom = Some(assignedRoom.room))
     }
   }
 }
@@ -295,13 +233,17 @@ object SecurityScenario {
     val persons = teamA ++ teamB
 
     scenario.components = rooms ++ doors ++ persons
+
+    scenario.avoidTeamRules = for {
+      room <- (lunchRooms ++ workingRooms)
+      personTeam <- scenario.Team.values
+      toAvoid <- scenario.Team.values
+      if personTeam != toAvoid
+    } yield scenario.AvoidTeamRule(room, personTeam, toAvoid)
+
     scenario.buildMap()
 
-    // build map
-
     println("System initialized")
-
-//    scenario.rootEnsemble.instance.toStringWithUtility
 
     // Simulation - each person decides to either stay in the room or move to another room.
     for (t <- 0 until 10) {
