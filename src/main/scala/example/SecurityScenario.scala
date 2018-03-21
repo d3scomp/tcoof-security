@@ -1,12 +1,14 @@
-package security
+package example
 
 import tcof._
 
 import scala.collection.mutable
 
-class SecurityScenario extends Model {
+class SecurityScenario extends Model with VisualLogger {
 
   val random = scala.util.Random
+
+  var doors: List[Door] = _
 
   //
   // components
@@ -19,10 +21,10 @@ class SecurityScenario extends Model {
   class WorkingPlace(name: String, capacity: Int) extends Room(name, capacity)
   class LunchRoom(name: String, capacity: Int) extends Room(name, capacity)
   class Corridor(name: String) extends Room(name, Int.MaxValue)
-  object Exterior extends Room("Exterior", Int.MaxValue)
+  //object Exterior extends Room("Exterior", Int.MaxValue)
 
   // serves as an one-way edge between room-nodes
-  class Door(val srcRoom: Room, val tgtRoom: Room) extends Component {
+  class Door(val srcRoom: Room, val tgtRoom: Room) {
     def enter(person: Person): Boolean = {
       val personToEnterTheRoom = new PersonToEnterTheRoom(person, tgtRoom)
       personToEnterTheRoom.isAllowedToEnter
@@ -63,12 +65,21 @@ class SecurityScenario extends Model {
             case None => ???
             case Some(selectedDoor) => {
               println(s"$name trying to move from ${selectedDoor.srcRoom} to ${selectedDoor.tgtRoom}")
+
+              // log selected person before entering the door
+              log(selected = List(this), Map.empty, Map.empty)
+
               if (selectedDoor.enter(this)) {
                 position = selectedDoor.tgtRoom
                 println(s"$name moved from ${selectedDoor.srcRoom} to ${selectedDoor.tgtRoom}")
+                log(selected = List.empty, enteringPassing = Map(this -> selectedDoor), enteringRejected = Map.empty)
               } else {
                 println(s"$name unable to move from ${selectedDoor.srcRoom} to ${selectedDoor.tgtRoom}")
+                log(selected = List.empty, enteringPassing = Map.empty, enteringRejected = Map(this -> selectedDoor))
               }
+
+              // log selected person after entering the door
+              log(selected = List(this), Map.empty, Map.empty)
             }
           }
         case None =>  // TODO - if no room is assigned, the person stays in the current room. Assign some room every time (e.g. corridor or exterier to move out) ?
@@ -92,7 +103,7 @@ class SecurityScenario extends Model {
       val teamsInRoom = components.collect{ case p: Person => p }.filter(_.position == room).map(_.team).toSet
       avoidTeamRules.exists {
         case AvoidTeamRule(`room`, person.team, teamToAvoid) => teamsInRoom.contains(teamToAvoid)
-        case _ => false
+        case _ => true
       }
     }
   }
@@ -148,7 +159,7 @@ class SecurityScenario extends Model {
   // Uses Floyd-Warshall algorithm with path reconstruction
   def buildMap(): Unit = {
     val rooms = components.collect{case r: Room => r}
-    val doors = components.collect{case d: Door => d}
+    //val doors = components.collect{case d: Door => d}
 
     for (r1 <- rooms; r2 <- rooms) {
       dist += (r1, r2) -> 10000
@@ -198,9 +209,9 @@ object SecurityScenario {
     //  +----------------------+
     //  |                      |
     //  |   +----+----+----+   |
-    //  | X | L1 | L2 | L3 |   |
+    //  |   | L1 | L2 | L3 |   |
     //  |   +- --+- --+- --+   |
-    //  |     C1   C2   C3 |   |
+    //  |   | C1   C2   C3 |   |
     //  |   +- --+- --+- --+   |
     //  |   | W1 | W2 | W3 |   |
     //  |   +----+----+----+   |
@@ -218,21 +229,22 @@ object SecurityScenario {
     val workingRooms = List((1, 2), (2, 2), (3, 2)).map{case (i, capacity) => new scenario.WorkingPlace(s"W$i", capacity)}
     val corridors = List(1, 2, 3).map(i => new scenario.Corridor(s"C$i"))
 
-    val rooms = lunchRooms ++ workingRooms ++ corridors ++ List(scenario.Exterior)
+    val rooms = lunchRooms ++ corridors ++ workingRooms //++ List(scenario.Exterior)
 
     val doors = List(
       (lunchRooms(0), corridors(0)), (lunchRooms(1), corridors(1)), (lunchRooms(2), corridors(2)),
       (workingRooms(0), corridors(0)), (workingRooms(1), corridors(1)), (workingRooms(2), corridors(2)),
-      (corridors(0), corridors(1)), (corridors(1), corridors(2)),
-      (scenario.Exterior, corridors(0))
+      (corridors(0), corridors(1)), (corridors(1), corridors(2))
+      //(scenario.Exterior, corridors(0))
     ).flatMap{case (r1, r2) => List(new scenario.Door(r1, r2), new scenario.Door(r2, r1))}
 
-    val teamA = (1 to 2).map(i => new scenario.Person(s"Person A$i", scenario.Team.TeamA, scenario.Exterior, doors))
-    val teamB = (1 to 2).map(i => new scenario.Person(s"Person B$i", scenario.Team.TeamB, scenario.Exterior, doors))
+    val teamA = (1 to 2).map(i => new scenario.Person(s"Person A$i", scenario.Team.TeamA, corridors(0), doors))
+    val teamB = (1 to 2).map(i => new scenario.Person(s"Person B$i", scenario.Team.TeamB, corridors(0), doors))
 
     val persons = teamA ++ teamB
 
-    scenario.components = rooms ++ doors ++ persons
+    scenario.components = rooms ++ persons
+    scenario.doors = doors
 
     scenario.avoidTeamRules = for {
       room <- (lunchRooms ++ workingRooms)
@@ -252,6 +264,8 @@ object SecurityScenario {
 
       persons.foreach(_.think())
 
+      scenario.log(List.empty, Map.empty, Map.empty)
+
       scenario.rootEnsemble.init()
       while (scenario.rootEnsemble.solve()) {
         //println(scenario.rootEnsemble.instance.toStringWithUtility)
@@ -259,6 +273,8 @@ object SecurityScenario {
       println(scenario.rootEnsemble.instance.toStringWithUtility)
       scenario.rootEnsemble.commit()
       println(scenario.rootEnsemble.instance.solutionUtility)
+
+      scenario.log(List.empty, Map.empty, Map.empty)
 
       // propagate assigned room from ensemble to persons
       scenario.propagateAssignedRoomsToComponents()
