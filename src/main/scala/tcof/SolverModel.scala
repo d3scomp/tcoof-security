@@ -156,10 +156,34 @@ class SolverModel extends ChocoModel {
     IntegerIntVar(sumVar)
   }
 
+  private def subIntAndIntVar(left: Int, right: IntVar): IntegerIntVar = {
+    val resultVar = newIntVar
+    arithm(resultVar, "+", right, "=", left).post()
+    IntegerIntVar(resultVar)
+  }
+
+  private def multiplyIntAndIntVar(left: Int, right: IntVar): IntegerIntVar = {
+    val productVar = newIntVar
+    times(right, left, productVar).post()
+    IntegerIntVar(productVar)
+  }
+
   private def addIntVarAndIntVar(left: IntVar, right: IntVar): IntegerIntVar = {
     val sum = newIntVar
     arithm(left, "+", right, "=", sum).post()
     IntegerIntVar(sum)
+  }
+
+  private def subIntVarAndIntVar(left: IntVar, right: IntVar): IntegerIntVar = {
+    val difference = newIntVar
+    arithm(left, "-", right, "=", difference).post()
+    IntegerIntVar(difference)
+  }
+
+  private def multiplyIntVarAndIntVar(left: IntVar, right: IntVar): IntegerIntVar = {
+    val productVar = newIntVar
+    times(left, right, productVar).post()
+    IntegerIntVar(productVar)
   }
 
   private[tcof] case class IntegerInt(value: Int) extends Integer {
@@ -170,6 +194,16 @@ class SolverModel extends ChocoModel {
     override def +(other: Integer): Integer = other match {
       case IntegerInt(otherValue) => IntegerInt(value + otherValue)
       case IntegerIntVar(otherValue) => addIntAndIntVar(value, otherValue)
+    }
+
+    override def -(other: Integer): Integer = other match {
+      case IntegerInt(otherValue) => IntegerInt(value - otherValue)
+      case IntegerIntVar(otherValue) => subIntAndIntVar(value, otherValue)
+    }
+
+    override def *(other: Integer): Integer = other match {
+      case IntegerInt(otherValue) => IntegerInt(value * otherValue)
+      case IntegerIntVar(otherValue) => multiplyIntAndIntVar(value, otherValue)
     }
 
     private def revRelOp(num: Integer, revOp: String, revFun: (Int, Int) => Boolean) = {
@@ -195,6 +229,16 @@ class SolverModel extends ChocoModel {
     override def +(other: Integer): Integer = other match {
       case IntegerInt(otherValue) => addIntAndIntVar(otherValue, value)
       case IntegerIntVar(otherValue) => addIntVarAndIntVar(value, otherValue)
+    }
+
+    override def -(other: Integer): Integer = other match {
+      case IntegerInt(otherValue) => subIntAndIntVar(otherValue, value)
+      case IntegerIntVar(otherValue) => subIntVarAndIntVar(value, otherValue)
+    }
+
+    override def *(other: Integer): Integer = other match {
+      case IntegerInt(otherValue) => multiplyIntAndIntVar(otherValue, value)
+      case IntegerIntVar(otherValue) => multiplyIntVarAndIntVar(value, otherValue)
     }
 
     private def relOp(num: Integer, op: String) = {

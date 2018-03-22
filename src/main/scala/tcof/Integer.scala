@@ -7,6 +7,8 @@ abstract class Integer {
   def solutionValue: Int
 
   def +(other: Integer): Integer
+  def -(other: Integer): Integer
+  def *(other: Integer): Integer
   def ===(num: Integer): Logical
   def !=(num: Integer): Logical
   def <(num: Integer): Logical
