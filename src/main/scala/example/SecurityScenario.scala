@@ -7,6 +7,7 @@ import scala.collection.mutable
 class SecurityScenario extends Model with VisualLogger {
 
   val random = scala.util.Random
+  random.setSeed(42)
 
   var doors: List[Door] = _
 
@@ -21,7 +22,6 @@ class SecurityScenario extends Model with VisualLogger {
   class WorkingPlace(name: String, capacity: Int) extends Room(name, capacity)
   class LunchRoom(name: String, capacity: Int) extends Room(name, capacity)
   class Corridor(name: String) extends Room(name, Int.MaxValue)
-  //object Exterior extends Room("Exterior", Int.MaxValue)
 
   // serves as an one-way edge between room-nodes
   class Door(val srcRoom: Room, val tgtRoom: Room) {
@@ -124,7 +124,11 @@ class SecurityScenario extends Model with VisualLogger {
       persons.all(_.mode == personMode) && persons.cardinality <= room.capacity
     }
 
+    def timeToReachRoom(persons: Role[Person]) = persons.sum(p => dist(p.position, room))
+
     utility {
+      // TODO - utility with timeToReachRoom works but takes too long to compute
+      //(persons.cardinality * 100) - timeToReachRoom(persons)
       persons.cardinality
     }
   }
@@ -204,19 +208,15 @@ object SecurityScenario {
     val scenario = new SecurityScenario
     scenario.init()
 
-    // Building has following map, rooms X (exterior) just simulates space outside of the building.
+    // Building has following map
     //
-    //  +----------------------+
-    //  |                      |
-    //  |   +----+----+----+   |
-    //  |   | L1 | L2 | L3 |   |
-    //  |   +- --+- --+- --+   |
-    //  |   | C1   C2   C3 |   |
-    //  |   +- --+- --+- --+   |
-    //  |   | W1 | W2 | W3 |   |
-    //  |   +----+----+----+   |
-    //  |                      |
-    //  +----------------------+
+    //    +----+----+----+
+    //    | L1 | L2 | L3 |
+    //    +- --+- --+- --+
+    //    | C1   C2   C3 |
+    //    +- --+- --+- --+
+    //    | W1 | W2 | W3 |
+    //    +----+----+----+
     //
     // Rooms marked as W* are working places with capacities 2 (W1), 2 (W2) and 2 (W3).
     // Rooms marked as L* are lunch places with capacities 2 (L1), 2 (L2) and 2 (L3).
@@ -229,17 +229,16 @@ object SecurityScenario {
     val workingRooms = List((1, 2), (2, 2), (3, 2)).map{case (i, capacity) => new scenario.WorkingPlace(s"W$i", capacity)}
     val corridors = List(1, 2, 3).map(i => new scenario.Corridor(s"C$i"))
 
-    val rooms = lunchRooms ++ corridors ++ workingRooms //++ List(scenario.Exterior)
+    val rooms = lunchRooms ++ corridors ++ workingRooms
 
     val doors = List(
       (lunchRooms(0), corridors(0)), (lunchRooms(1), corridors(1)), (lunchRooms(2), corridors(2)),
       (workingRooms(0), corridors(0)), (workingRooms(1), corridors(1)), (workingRooms(2), corridors(2)),
       (corridors(0), corridors(1)), (corridors(1), corridors(2))
-      //(scenario.Exterior, corridors(0))
     ).flatMap{case (r1, r2) => List(new scenario.Door(r1, r2), new scenario.Door(r2, r1))}
 
-    val teamA = (1 to 2).map(i => new scenario.Person(s"Person A$i", scenario.Team.TeamA, corridors(0), doors))
-    val teamB = (1 to 2).map(i => new scenario.Person(s"Person B$i", scenario.Team.TeamB, corridors(0), doors))
+    val teamA = (1 to 5).map(i => new scenario.Person(s"Person A$i", scenario.Team.TeamA, corridors(0), doors))
+    val teamB = (1 to 5).map(i => new scenario.Person(s"Person B$i", scenario.Team.TeamB, corridors(0), doors))
 
     val persons = teamA ++ teamB
 

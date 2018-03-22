@@ -51,7 +51,7 @@ trait VisualLogger {
   def log(selected: List[Person], enteringPassing: Map[Person, Door], enteringRejected: Map[Person, Door]): Unit = {
     frameCnt += 1
 
-    val file = new File(logDir.getPath + "/" + f"${frameCnt}%03d" + ".html")
+    val file = new File(logDir.getPath + "/" + f"${frameCnt}%06d" + ".html")
     val writer = new PrintWriter(file)
 
     val personsToNotPrintInRooms = (enteringPassing ++ enteringRejected).keys.toSeq
