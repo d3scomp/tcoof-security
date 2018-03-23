@@ -77,11 +77,16 @@ trait VisualLogger {
         writer.println(vis.print(Some(pos), HighLighting.Rejected))
       }
 
+      writer.println(stepAndUtility)
+
       writer.println(footer)
     } finally {
       writer.close()
     }
   }
+
+  def stepAndUtility =
+    s"""<div id="info">step: ${this.time} utility: ${rootEnsemble.instance.solutionUtility}</div>"""
 
   val header =
     s"""

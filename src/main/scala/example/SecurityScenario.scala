@@ -260,10 +260,9 @@ object SecurityScenario {
     for (t <- 0 until 10) {
       println(s"--------------------------------------------------------")
       println(s"Step $t")
+      scenario.step(t)
 
       persons.foreach(_.think())
-
-      scenario.log(List.empty, Map.empty, Map.empty)
 
       scenario.rootEnsemble.init()
       while (scenario.rootEnsemble.solve()) {

@@ -70,3 +70,10 @@
 .selected {
   outline: 5px solid blue;
 }
+#info {
+  font-size: 25px;
+  font-family: Arial;
+  position: absolute;
+  top:760px;
+  left:550px;
+}
