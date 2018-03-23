@@ -101,8 +101,8 @@ class SecurityScenario extends Model with VisualLogger {
   class PersonToEnterTheRoom(person: Person, room: Room) {
     def isAllowedToEnter: Boolean = {
       val teamsInRoom = components.collect{ case p: Person => p }.filter(_.position == room).map(_.team).toSet
-      avoidTeamRules.exists {
-        case AvoidTeamRule(`room`, person.team, teamToAvoid) => teamsInRoom.contains(teamToAvoid)
+      avoidTeamRules.forall {
+        case AvoidTeamRule(`room`, person.team, teamToAvoid) => !teamsInRoom.contains(teamToAvoid)
         case _ => true
       }
     }
