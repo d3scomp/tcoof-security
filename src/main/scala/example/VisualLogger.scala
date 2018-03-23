@@ -133,6 +133,7 @@ trait VisualLogger {
 
       s"""
          |<span class="room ${classStyle}" style="position:absolute; top:${position.top}px; left: ${position.left}px">
+         |  <span class="room-name">${room.name}</span>
          |  ${personStrings.mkString("\n")}
          |</span>
        """.stripMargin
