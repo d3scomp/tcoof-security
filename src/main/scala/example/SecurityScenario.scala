@@ -55,14 +55,13 @@ class SecurityScenario extends Model with VisualLogger {
       // change the current state with probability 1/3
       // TODO - use Gaussian distribution to stay in the state for some number of steps?
 
-      random.nextInt(3) == 0
+      random.nextInt(9) == 0
     }
 
     def act(): Unit = {
       targetRoom match {
         case Some(tgt) =>
           nextDoor(position, tgt) match {
-            case None => ???
             case Some(selectedDoor) => {
               println(s"$name trying to move from ${selectedDoor.srcRoom} to ${selectedDoor.tgtRoom}")
 
@@ -81,6 +80,7 @@ class SecurityScenario extends Model with VisualLogger {
               // log selected person after entering the door
               log(selected = List(this), Map.empty, Map.empty)
             }
+            case None => // no path from srcRoom to tgtRoom. Also a case when person is already in tgtRoom
           }
         case None =>  // TODO - if no room is assigned, the person stays in the current room. Assign some room every time (e.g. corridor or exterier to move out) ?
       }
@@ -100,9 +100,12 @@ class SecurityScenario extends Model with VisualLogger {
 
   class PersonToEnterTheRoom(person: Person, room: Room) {
     def isAllowedToEnter: Boolean = {
-      val teamsInRoom = components.collect{ case p: Person => p }.filter(_.position == room).map(_.team).toSet
+      val teamsInRoom = components.collect{ case p: Person => p }
+                                  .filter(_.position == room)
+                                  .map(_.team).toSet
       avoidTeamRules.forall {
-        case AvoidTeamRule(`room`, person.team, teamToAvoid) => !teamsInRoom.contains(teamToAvoid)
+        case AvoidTeamRule(`room`, person.team, teamToAvoid) =>
+          !teamsInRoom.contains(teamToAvoid)
         case _ => true
       }
     }
@@ -124,7 +127,8 @@ class SecurityScenario extends Model with VisualLogger {
       persons.all(_.mode == personMode) && persons.cardinality <= room.capacity
     }
 
-    def timeToReachRoom(persons: Role[Person]) = persons.sum(p => dist(p.position, room))
+    def timeToReachRoom(persons: Role[Person]) =
+      persons.sum(p => dist(p.position, room))
 
     utility {
       // TODO - utility with timeToReachRoom works but takes too long to compute
@@ -135,7 +139,10 @@ class SecurityScenario extends Model with VisualLogger {
 
   class System extends RootEnsemble {
 
-    val teamAWorkingRooms = ensembles("Team A working rooms", components.select[WorkingPlace].map(new AssignRooms(_, Team.TeamA, PersonMode.Work)))
+    val teamAWorkingRooms = ensembles("Team A working rooms",
+      components.select[WorkingPlace]
+                .map(new AssignRooms(_, Team.TeamA, PersonMode.Work))
+    )
     val teamBWorkingRooms = ensembles("Team B working rooms", components.select[WorkingPlace].map(new AssignRooms(_, Team.TeamB, PersonMode.Work)))
 
     val teamALunchRooms = ensembles("Team A lunch rooms", components.select[LunchRoom].map(new AssignRooms(_, Team.TeamA, PersonMode.Eat)))
@@ -145,7 +152,7 @@ class SecurityScenario extends Model with VisualLogger {
       // - every person can be assigned only to one room
       // - room can be assigned to at most one team
 
-      // TODO: this doesn't behave as expected - probably cannot concat iterables, must create ensemble
+      // NOTE: this doesn't behave as expected - probably cannot concat iterables, must create ensemble
 //      (teamAWorkingRooms.map(_.persons) ++ teamBWorkingRooms.map(_.persons)).allDisjoint &&
       teamAWorkingRooms.map(_.persons).allDisjoint && teamBWorkingRooms.map(_.persons).allDisjoint &&
       teamAWorkingRooms.disjointAfterMap(_.room, teamBWorkingRooms, (x: AssignRooms) => x.room) &&
@@ -166,7 +173,8 @@ class SecurityScenario extends Model with VisualLogger {
     //val doors = components.collect{case d: Door => d}
 
     for (r1 <- rooms; r2 <- rooms) {
-      dist += (r1, r2) -> 10000
+      val initDist = if (r1 == r2) 0 else 10000
+      dist += (r1, r2) -> initDist
     }
 
     for (door <- doors) {
