@@ -11,14 +11,15 @@ class SecurityScenario extends Model with VisualLogger {
 
   var doors: List[Door] = _
 
+  var workingRooms: List[WorkingPlace] = _
+  var lunchRooms: List[LunchRoom] = _
+  var corridors: List[Corridor] = _
+
   //
   // components
   //
 
-  abstract class Room(name: String, val capacity: Int) extends Component {
-    name(name)
-  }
-
+  abstract class Room(val name: String, val capacity: Int)
   class WorkingPlace(name: String, capacity: Int) extends Room(name, capacity)
   class LunchRoom(name: String, capacity: Int) extends Room(name, capacity)
   class Corridor(name: String) extends Room(name, Int.MaxValue)
@@ -63,17 +64,17 @@ class SecurityScenario extends Model with VisualLogger {
         case Some(tgt) =>
           nextDoor(position, tgt) match {
             case Some(selectedDoor) => {
-              println(s"$name trying to move from ${selectedDoor.srcRoom} to ${selectedDoor.tgtRoom}")
+              println(s"$name trying to move from ${selectedDoor.srcRoom.name} to ${selectedDoor.tgtRoom.name}")
 
               // log selected person before entering the door
               log(selected = List(this), Map.empty, Map.empty)
 
               if (selectedDoor.enter(this)) {
                 position = selectedDoor.tgtRoom
-                println(s"$name moved from ${selectedDoor.srcRoom} to ${selectedDoor.tgtRoom}")
+                println(s"$name moved from ${selectedDoor.srcRoom.name} to ${selectedDoor.tgtRoom.name}")
                 log(selected = List.empty, enteringPassing = Map(this -> selectedDoor), enteringRejected = Map.empty)
               } else {
-                println(s"$name unable to move from ${selectedDoor.srcRoom} to ${selectedDoor.tgtRoom}")
+                println(s"$name unable to move from ${selectedDoor.srcRoom.name} to ${selectedDoor.tgtRoom.name}")
                 log(selected = List.empty, enteringPassing = Map.empty, enteringRejected = Map(this -> selectedDoor))
               }
 
@@ -140,13 +141,16 @@ class SecurityScenario extends Model with VisualLogger {
   class System extends RootEnsemble {
 
     val teamAWorkingRooms = ensembles("Team A working rooms",
-      components.select[WorkingPlace]
-                .map(new AssignRooms(_, Team.TeamA, PersonMode.Work))
-    )
-    val teamBWorkingRooms = ensembles("Team B working rooms", components.select[WorkingPlace].map(new AssignRooms(_, Team.TeamB, PersonMode.Work)))
+      workingRooms.map(new AssignRooms(_, Team.TeamA, PersonMode.Work)))
 
-    val teamALunchRooms = ensembles("Team A lunch rooms", components.select[LunchRoom].map(new AssignRooms(_, Team.TeamA, PersonMode.Eat)))
-    val teamBLunchRooms = ensembles("Team B lunch rooms", components.select[LunchRoom].map(new AssignRooms(_, Team.TeamB, PersonMode.Eat)))
+    val teamBWorkingRooms = ensembles("Team B working rooms",
+      workingRooms.map(new AssignRooms(_, Team.TeamB, PersonMode.Work)))
+
+    val teamALunchRooms = ensembles("Team A lunch rooms",
+      lunchRooms.map(new AssignRooms(_, Team.TeamA, PersonMode.Eat)))
+
+    val teamBLunchRooms = ensembles("Team B lunch rooms",
+      lunchRooms.map(new AssignRooms(_, Team.TeamB, PersonMode.Eat)))
 
     membership {
       // - every person can be assigned only to one room
@@ -169,7 +173,7 @@ class SecurityScenario extends Model with VisualLogger {
 
   // Uses Floyd-Warshall algorithm with path reconstruction
   def buildMap(): Unit = {
-    val rooms = components.collect{case r: Room => r}
+    val rooms = workingRooms ++ corridors ++ lunchRooms
     //val doors = components.collect{case d: Door => d}
 
     for (r1 <- rooms; r2 <- rooms) {
@@ -250,8 +254,11 @@ object SecurityScenario {
 
     val persons = teamA ++ teamB
 
-    scenario.components = rooms ++ persons
+    scenario.components = /* rooms ++ */ persons
     scenario.doors = doors
+    scenario.lunchRooms = lunchRooms
+    scenario.workingRooms = workingRooms
+    scenario.corridors = corridors
 
     scenario.avoidTeamRules = for {
       room <- (lunchRooms ++ workingRooms)

@@ -35,7 +35,7 @@ trait VisualLogger {
   }
 
   private def getRoomVizualizations(): Seq[RoomVizualization] = {
-    val rooms = components.collect{ case r: Room => r }
+    val rooms = lunchRooms ++ corridors ++ workingRooms
 
     val positions = for (top <- (0 to 500).by(roomSize); left <- (0 to 500).by(roomSize)) yield Position(top, left)
     rooms.zip(positions).map(x => new RoomVizualization(x._1, x._2))
