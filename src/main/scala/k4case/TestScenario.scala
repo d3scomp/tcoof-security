@@ -5,7 +5,9 @@ import org.joda.time.DateTime
 import tcof._
 import tcof.traits.map2d.{Map2DTrait, Node, Position}
 
-class TestScenario extends Model /*with Map2DTrait[_] */ {
+class NodeData
+
+class TestScenario extends Model with Map2DTrait[NodeData] {
 
   case class HurryUpNotification(shift: Shift)
  // case class
