@@ -30,7 +30,7 @@ class TestScenario extends Model /*with Map2DTrait[_] */ {
   class Worker(
                 val id: String,
                 var position: Position,
-                val capabilities: Set[Capability]
+                val capabilities: Set[String]
               ) extends Component {
     name(s"Worker ${id}")
   }
@@ -58,9 +58,9 @@ class TestScenario extends Model /*with Map2DTrait[_] */ {
     name(s"Shift ${id}")
   }
 
-  var workers:Set[_]
+  var workers = EntityReader.readWorkersFromYaml(this, "model.yaml", (id, pos, caps) => { new Worker(id, pos, caps)})
 
-  val workerA = new Worker("A", Position(10, 20), Set(CAP_A, CAP_B))
+//  val workerA = new Worker("A", Position(10, 20), Set(CAP_A, CAP_B))
 
   // TODO: pridat dalsi, az do shift
   // TODO: namalovat floorplan v SVG
@@ -121,7 +121,6 @@ object TestScenario {
   def main(args: Array[String]): Unit = {
     val scenario = new TestScenario
     scenario.init()
-    scenario.workers = EntityReader.readWorkersFromYaml(scenario, args(0))
 
     /*
     val components = List(
