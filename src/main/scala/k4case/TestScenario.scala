@@ -37,15 +37,31 @@ class TestScenario extends Model with Map2DTrait[NodeData] {
     name(s"Worker ${id}")
   }
 
+  class Room (
+               val id: String,
+               val position: Position,
+               val entryDoor: Door
+             ) extends Component {
+    name(s"Room ${id}")
+  }
+
   class WorkPlace(
-                   val id: String,
-                   val position: Position,
-                   val entryDoor: Door
-                 ) extends Component {
+                   id: String,
+                   position: Position,
+                   entryDoor: Door,
+                   val inRoom: Room
+                 ) extends Room(id, position, entryDoor) {
     name(s"WorkPlace ${id}")
   }
 
-  // TODO - tady je jeste treba domodelovat, ze je vnejsi hala, v ni je dispenser a pak je teprve pristup na pracoviste
+  class Factory (
+                  id: String,
+                  position: Position,
+                  entryDoor: Door,
+                  val dispenser: Dispenser
+                ) extends Room(id, position, entryDoor) {
+    name(s"Factory ${id}")
+  }
 
   class Shift(
                val id: String,
