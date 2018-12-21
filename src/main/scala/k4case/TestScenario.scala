@@ -13,7 +13,7 @@ class TestScenario extends Model with Map2DTrait[_] {
   }
 
   case class HurryUpNotification(shift: Shift)
-  case class 
+  case class
 
   import Capability._
   import Notifications._
