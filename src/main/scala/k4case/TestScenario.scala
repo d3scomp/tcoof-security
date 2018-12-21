@@ -1,22 +1,17 @@
 package k4case
 
+import k4case.TestScenario.Capability.Capability
 import org.joda.time.DateTime
 import tcof._
 import tcof.traits.map2d.{Map2DTrait, Node, Position}
 
-class TestScenario extends Model with Map2DTrait[_] {
-
-  object Capability extends Enumeration {
-    type Capability = Value
-    val CAP_A = Value("A")
-    val CAP_B = Value("B")
-  }
+class TestScenario extends Model /*with Map2DTrait[_] */ {
 
   case class HurryUpNotification(shift: Shift)
-  case class
+ // case class
 
-  import Capability._
-  import Notifications._
+  import TestScenario.Capability._
+  //import Notifications._
 
   class Door(
               val id: String,
@@ -63,6 +58,8 @@ class TestScenario extends Model with Map2DTrait[_] {
     name(s"Shift ${id}")
   }
 
+  var workers:Set[_]
+
   val workerA = new Worker("A", Position(10, 20), Set(CAP_A, CAP_B))
 
   // TODO: pridat dalsi, az do shift
@@ -76,7 +73,7 @@ class TestScenario extends Model with Map2DTrait[_] {
 //    val workplaceA =
 
 //      val
-  class ShiftTeam(shift: Shift) {
+ /* class ShiftTeam(shift: Shift) {
     // These are like invariants at a given point of time
     val cancelledWorkers = shift.workers.filter(wrk => wrk notified Notification(shift.id, ASSIGNMENT_CANCELED_DUE_LATENESS))
 
@@ -103,16 +100,28 @@ class TestScenario extends Model with Map2DTrait[_] {
 
 
 
-  }
+  } */
 
-  root(new ShiftTeam(shiftA) )
+  /*root(new ShiftTeam(shiftA) ) */
 }
 
 
 object TestScenario {
+
+  object Capability extends Enumeration {
+    type Capability = Value
+    val CAP_A = Value("A")
+    val CAP_B = Value("B")
+    val CAP_C = Value("C")
+    val CAP_D = Value("D")
+    val CAP_E = Value("E")
+    val CAP_UNKNOWN = Value("UNKNOWN")
+  }
+
   def main(args: Array[String]): Unit = {
     val scenario = new TestScenario
     scenario.init()
+    scenario.workers = EntityReader.readWorkersFromYaml(scenario, args(0))
 
     /*
     val components = List(

@@ -1,0 +1,90 @@
+employees:
+  - id: 1100000001
+    name: John Doe
+    phone: +420100000001
+    nationalId: 1100000001
+    familyStatus: married
+    reportedLeave:
+        start: 2018-09-01
+        end: 2018-09-30
+    position: [ 10, 10 ]
+    capabilites: [A, B, C, D, E]
+  - id: 1100000002
+    name: Jane Doe
+    phone: +420100000002
+    nationalId: 1100000002
+    familyStatus: married
+    reportedLeave:
+      start: 2018-09-01
+      end: 2018-09-30
+    position: [ 10, 10 ]
+    capabilites: [A, B, C, D, E]
+  - id: 1100000003
+    name: Eddard Stark
+    phone: +420100000003
+    nationalId: 1100000003
+    familyStatus: married
+    reportedLeave:
+    position: [ 10, 10 ]
+    capabilites: [A, B, C, D, E]
+  - id: 1100000004
+    name: Catelyn Stark
+    phone: +420100000004
+    nationalId: 1100000004
+    familyStatus: married
+    reportedLeave:
+    position: [ 10, 10 ]
+    capabilites: [A, B, C, D, E]
+  - id: 1100000005
+    name: Jon Snow
+    phone: +420100000005
+    nationalId: 1100000005
+    familyStatus: single
+    reportedLeave:
+    position: [ 10, 10 ]
+    capabilites: [A, B, C, D, E]
+  - id: 1100000006
+    name: Sansa Stark
+    phone: +420100000006
+    nationalId: 1100000006
+    familyStatus: married
+    reportedLeave:
+    position: [ 10, 10 ]
+    capabilites: [A, B, C, D, E]
+  - id: 1100000007
+    name: Bran Stark
+    phone: +420100000007
+    nationalId: 1100000007
+    familyStatus: single
+    reportedLeave:
+    position: [ 10, 10 ]
+    capabilites: [A, B, C, D, E]
+  - id: 1100000008
+    name: Daenerys Targaryen
+    phone: +420100000008
+    nationalId: 1100000008
+    familyStatus: married
+    reportedLeave:
+    position: [ 10, 10 ]
+    capabilites: [A, B, C, D, E]
+  - id: 1100000009
+    name: Jaime Lannister
+    phone: +420100000009
+    nationalId: 1100000009
+    familyStatus: single
+    reportedLeave:
+    position: [ 10, 10 ]
+    capabilites: [A, B, C, D, E]
+shifts:
+  - startsAt: 9:00
+    endsAt: 17:00
+    hall: Hall1
+    foreman: 1100000003
+    workers: [1100000004, 1100000006, 1100000007]
+    standby: [1100000005]
+  - startsAt: 9:00
+    endsAt: 17:00
+    hall: Hall2
+    foreman: 1100000008
+    workers: [1100000001, 1100000002, 1100000009]
+    standby: [1100000005]
