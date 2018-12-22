@@ -71,13 +71,14 @@ class TestScenario extends Model with Map2DTrait[NodeData] {
                val foreman: Worker,
                val workers: Array[Worker],
                val standbys: Array[Worker],
-               val assignments: Map[Worker, Capability]
+               val assignments: Map[Worker, String]
              ) extends Component {
     name(s"Shift ${id}")
   }
 
   var workers = EntityReader.readWorkersFromYaml(this, "model.yaml", (id, pos, caps) => { new Worker(id, pos, caps)})
   EntityReader.readMapFromYaml(this, "model.yaml")
+  //var shifts = EntityReader.readShiftsFromYaml(this, "model.yaml", workers, (id, st, end, wp, fo, wks, stb, ass) => { new Shift(id, st, end, wp, fo, wks, stb, ass)})
 
 //    val workplaceA =
 

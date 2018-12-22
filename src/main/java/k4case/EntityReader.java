@@ -47,6 +47,10 @@ public class EntityReader {
 
     }
 
+    public static Set<TestScenario.Shift> readShiftsFromYaml(TestScenario testScenario, String fname, Set<TestScenario.Worker> workers, ShiftFactory factory) throws IOException {
+        return null;
+    }
+
     public static void readMapFromYaml(TestScenario testScenario, String fname) throws IOException {
         Yaml yaml = new Yaml();
         Map<String, Map<String, List<Map<String, Object>>>> data = yaml.load(Files.newBufferedReader(Paths.get(fname)));

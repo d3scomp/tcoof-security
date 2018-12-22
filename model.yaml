@@ -146,15 +146,31 @@ map:
       nodeOut: WP3
       bidirectional: yes
 shifts:
-  - startsAt: 9:00
+  - id: Shift1
+    startsAt: 9:00
     endsAt: 17:00
-    hall: Hall1
+    workPlace: WP1
     foreman: 1100000003
     workers: [1100000004, 1100000006, 1100000007]
     standby: [1100000005]
-  - startsAt: 9:00
+    assignment:
+      - worker: 1100000004
+        capability: A
+      - worker: 1100000006
+        capability: B
+      - worker: 1100000007
+        capability: C
+  - id: Shift2
+    startsAt: 9:00
     endsAt: 17:00
-    hall: Hall2
+    workPlace: WP2
     foreman: 1100000008
     workers: [1100000001, 1100000002, 1100000009]
     standby: [1100000005]
+    assignment:
+      - worker: 1100000001
+        capability: A
+      - worker: 1100000002
+        capability: B
+      - worker: 1100000009
+        capability: C
