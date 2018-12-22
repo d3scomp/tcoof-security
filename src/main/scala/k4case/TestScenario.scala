@@ -77,16 +77,7 @@ class TestScenario extends Model with Map2DTrait[NodeData] {
   }
 
   var workers = EntityReader.readWorkersFromYaml(this, "model.yaml", (id, pos, caps) => { new Worker(id, pos, caps)})
-
-//  val workerA = new Worker("A", Position(10, 20), Set(CAP_A, CAP_B))
-
-  // TODO: pridat dalsi, az do shift
-  // TODO: namalovat floorplan v SVG
-  // TODO: namodelovat mapu
-
-  // val n1 = map.addNode(Position(12,23))
-  // val n2 = map.addNode(Position(32,43))
-  // map.addDirectedEdge(n1, n2)
+  EntityReader.readMapFromYaml(this, "model.yaml")
 
 //    val workplaceA =
 

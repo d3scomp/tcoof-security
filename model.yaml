@@ -115,6 +115,36 @@ map:
     - nodeIn: point1toWP1
       nodeOut: point2toWP1
       bidirectional: yes
+    - nodeIn: point2toWP1
+      nodeOut: WP1
+      bidirectional: yes
+    - nodeIn: dispenser
+      nodeOut: point1toWP23
+      bidirectional: yes
+    - nodeIn: point1toWP23
+      nodeOut: point2toWP23
+      bidirectional: yes
+    - nodeIn: point2toWP23
+      nodeOut: point3toWP23
+      bidirectional: yes
+    - nodeIn: point3toWP23
+      nodeOut: junctiontoWP23
+      bidirectional: yes
+    - nodeIn: junctiontoWP23
+      nodeOut: point1toWP2
+      bidirectional: yes
+    - nodeIn: point1toWP2
+      nodeOut: point2toWP2
+      bidirectional: yes
+    - nodeIn: point2toWP2
+      nodeOut: WP2
+      bidirectional: yes
+    - nodeIn: junctiontoWP23
+      nodeOut: point1toWP3
+      bidirectional: yes
+    - nodeIn: point1toWP3
+      nodeOut: WP3
+      bidirectional: yes
 shifts:
   - startsAt: 9:00
     endsAt: 17:00
