@@ -147,8 +147,8 @@ map:
       bidirectional: yes
 shifts:
   - id: Shift1
-    startsAt: 9:00
-    endsAt: 17:00
+    startsAt: 2018-12-03T09:00:00
+    endsAt: 2018-12-03T17:00:00
     workPlace: WP1
     foreman: 1100000003
     workers: [1100000004, 1100000006, 1100000007]
@@ -161,8 +161,8 @@ shifts:
       - worker: 1100000007
         capability: C
   - id: Shift2
-    startsAt: 9:00
-    endsAt: 17:00
+    startsAt: 2018-12-03T09:00:00
+    endsAt: 2018-12-03T17:00:00
     workPlace: WP2
     foreman: 1100000008
     workers: [1100000001, 1100000002, 1100000009]

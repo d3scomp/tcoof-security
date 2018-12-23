@@ -1,9 +1,16 @@
 package k4case
 
+import java.nio.file.{Files, Paths}
+import java.util
+import java.util.{List, Map}
+
 import k4case.TestScenario.Capability.Capability
-import org.joda.time.DateTime
+import org.joda.time.LocalDateTime
+import org.yaml.snakeyaml.Yaml
 import tcof._
 import tcof.traits.map2d.{Map2DTrait, Node, Position}
+
+import scala.util.control.Breaks._
 
 class NodeData
 
@@ -65,8 +72,8 @@ class TestScenario extends Model with Map2DTrait[NodeData] {
 
   class Shift(
                val id: String,
-               val startTime: DateTime,
-               val endTime: DateTime,
+               val startTime: LocalDateTime,
+               val endTime: LocalDateTime,
                val workPlace: WorkPlace,
                val foreman: Worker,
                val workers: Array[Worker],
@@ -77,8 +84,21 @@ class TestScenario extends Model with Map2DTrait[NodeData] {
   }
 
   var workers = EntityReader.readWorkersFromYaml(this, "model.yaml", (id, pos, caps) => { new Worker(id, pos, caps)})
-  EntityReader.readMapFromYaml(this, "model.yaml")
-  //var shifts = EntityReader.readShiftsFromYaml(this, "model.yaml", workers, (id, st, end, wp, fo, wks, stb, ass) => { new Shift(id, st, end, wp, fo, wks, stb, ass)})
+
+  def readShifts(): Unit = {
+    val yaml = new Yaml()
+    val data: util.Map[String, util.List[util.Map[String, AnyRef]]] = yaml.load(Files.newBufferedReader(Paths.get("model.yaml")))
+    val shifts = data.get("shifts")
+    shifts.forEach(shift => {
+      val id = shift.get("id")
+      val startTime = shift.get("startsAt")
+      val endTime = shift.get("endsAt")
+      val formanName = shift.get("foreman")
+      val foreman = workers.toStream.filter(w => w.id.equals(formanName)).head
+
+
+    })
+  }
 
 //    val workplaceA =
 
@@ -131,6 +151,8 @@ object TestScenario {
   def main(args: Array[String]): Unit = {
     val scenario = new TestScenario
     scenario.init()
+    EntityReader.readMapFromYaml(scenario, "model.yaml")
+    scenario.readShifts()
 
     /*
     val components = List(
