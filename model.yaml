@@ -75,6 +75,23 @@ employees:
     reportedLeave:
     position: [ 10, 10 ]
     capabilites: [A, B, C, D, E]
+workplaces:
+  - id: Factory
+    position: [0, 0]
+    door: [20, 90]
+    inRoom: None
+  - id: WP1
+    position: [50, 50]
+    door: [40, 50]
+    inRoom: Factory
+  - id: WP2
+    position: [130, 50]
+    door: [120, 50]
+    inRoom: Factory
+  - id: WP3
+    position: [130, 105]
+    door: [120, 105]
+    inRoom: Factory
 map:
   points:
     - id: outside

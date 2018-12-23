@@ -6,6 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -31,7 +32,7 @@ public class EntityReader {
         }
 
         List<String> s = (List<String>) o;
-        java.util.Set<String> set = s.stream().collect(Collectors.toSet());
+        java.util.Set<String> set = new HashSet<>(s);
 
         return scala.collection.JavaConverters.asScalaSet(set).toSet();
     }
@@ -41,7 +42,7 @@ public class EntityReader {
         Map<String, List<Map<String, Object>>> data = yaml.load(Files.newBufferedReader(Paths.get(fname)));
 
         java.util.Set<TestScenario.Worker> workers = data.get("employees").stream().map(e ->
-                factory.create(((Integer)e.get("id")).toString(), readPosition(e.get("position")), readCapabilities(e.get("capabilites")))).
+                factory.create(e.get("id").toString(), readPosition(e.get("position")), readCapabilities(e.get("capabilites")))).
                 collect(Collectors.toSet());
         return scala.collection.JavaConverters.asScalaSet(workers).toSet();
 

@@ -2,15 +2,14 @@ package k4case
 
 import java.nio.file.{Files, Paths}
 import java.util
-import java.util.{List, Map}
+import java.util.stream.Collectors
 
-import k4case.TestScenario.Capability.Capability
 import org.joda.time.LocalDateTime
 import org.yaml.snakeyaml.Yaml
 import tcof._
 import tcof.traits.map2d.{Map2DTrait, Node, Position}
 
-import scala.util.control.Breaks._
+import scala.collection.JavaConverters._
 
 class NodeData
 
@@ -83,20 +82,43 @@ class TestScenario extends Model with Map2DTrait[NodeData] {
     name(s"Shift ${id}")
   }
 
-  var workers = EntityReader.readWorkersFromYaml(this, "model.yaml", (id, pos, caps) => { new Worker(id, pos, caps)})
+  val workers = EntityReader.readWorkersFromYaml(this, "model.yaml", (id, pos, caps) => { new Worker(id, pos, caps)}).asInstanceOf[Set[Worker]]
+
+  def readWorkPlaces():Unit = {
+    val yaml = new Yaml()
+    val data: util.Map[String, util.List[util.Map[String, AnyRef]]] = yaml.load(Files.newBufferedReader(Paths.get("model.yaml")))
+    val wps = data.get("workplaces")
+    wps.forEach(wp => {
+      // TODO 
+
+    })
+  }
 
   def readShifts(): Unit = {
     val yaml = new Yaml()
     val data: util.Map[String, util.List[util.Map[String, AnyRef]]] = yaml.load(Files.newBufferedReader(Paths.get("model.yaml")))
     val shifts = data.get("shifts")
     shifts.forEach(shift => {
-      val id = shift.get("id")
-      val startTime = shift.get("startsAt")
-      val endTime = shift.get("endsAt")
-      val formanName = shift.get("foreman")
-      val foreman = workers.toStream.filter(w => w.id.equals(formanName)).head
-
-
+      val id = shift.get("id").toString
+      val startTime = LocalDateTime.fromDateFields(shift.get("startsAt").asInstanceOf[util.Date])
+      val endTime = LocalDateTime.fromDateFields(shift.get("endsAt").asInstanceOf[util.Date])
+      val formanName = shift.get("foreman").toString
+      val foreman = workers.toStream.filter(w => {w.id.equals(formanName)}).head
+      val workersNames = shift.get("workers").asInstanceOf[util.List[Object]]
+      val shiftWorkers = workersNames.iterator().asScala.toStream.map(name => {
+        workers.toStream.filter(w => w.id.equals(name.toString)).head
+      }).toArray
+      val standbyNames = shift.get("standby").asInstanceOf[util.List[Object]]
+      val standby = standbyNames.iterator().asScala.toStream.map(name => {
+        workers.toStream.filter(w => w.id.equals(name.toString)).head
+      }).toArray
+      val assignmentList = shift.get("assignment").asInstanceOf[util.List[util.Map[String, Object]]]
+      val assignment = assignmentList.iterator().asScala.toStream.map(wk => {
+        val worker = workers.toStream.filter(w => w.id.equals(wk.get("worker").toString)).head
+        (worker, wk.get("capability"))
+      }).toMap
+      // TODO we need workplace
+      //new Shift(id, startTime, endTime, _, foreman, shiftWorkers, standby, assignment)
     })
   }
 
