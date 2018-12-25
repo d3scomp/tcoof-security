@@ -2,8 +2,8 @@ package k4case
 
 import java.nio.file.{Files, Paths}
 import java.util
+import java.time.{LocalDateTime, ZoneId}
 
-import org.joda.time.LocalDateTime
 import org.yaml.snakeyaml.Yaml
 import tcof._
 import tcof.traits.map2d.{Map2DTrait, Node, Position}
@@ -122,8 +122,8 @@ class TestScenario extends Model with Map2DTrait[NodeData] {
     val shiftsList = scala.collection.mutable.MutableList[Shift]()
     shifts.forEach(shift => {
       val id = shift.get("id").toString
-      val startTime = LocalDateTime.fromDateFields(shift.get("startsAt").asInstanceOf[util.Date])
-      val endTime = LocalDateTime.fromDateFields(shift.get("endsAt").asInstanceOf[util.Date])
+      val startTime = LocalDateTime.ofInstant(shift.get("startsAt").asInstanceOf[util.Date].toInstant, ZoneId.systemDefault())
+      val endTime = LocalDateTime.ofInstant(shift.get("endsAt").asInstanceOf[util.Date].toInstant, ZoneId.systemDefault())
       val workPlaceName = shift.get("workPlace").toString
       val workPlace = rooms.toStream.filter(rm => rm.id.equals(workPlaceName)).head.asInstanceOf[WorkPlace]
       val formanName = shift.get("foreman").toString
