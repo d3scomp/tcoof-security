@@ -18,7 +18,7 @@ import tcof.traits.map2d.Position;
 
 public class EntityReader {
 
-    private static Position readPosition(Object o) {
+    static Position readPosition(Object o) {
         if (! (o instanceof List)) {
             throw new RuntimeException("Position is not a list");
         }
@@ -26,7 +26,7 @@ public class EntityReader {
         return new Position(s.get(0), s.get(1));
     }
 
-    private static Set<String> readCapabilities(Object o) {
+    static Set<String> readCapabilities(Object o) {
         if (! (o instanceof List)) {
             throw new RuntimeException("Capabilities are not a list");
         }
@@ -37,7 +37,7 @@ public class EntityReader {
         return scala.collection.JavaConverters.asScalaSet(set).toSet();
     }
 
-    public static Set<TestScenario.Worker> readWorkersFromYaml(TestScenario testScenario, String fname, WorkerFactory factory) throws IOException {
+    static Set<TestScenario.Worker> readWorkersFromYaml(TestScenario testScenario, String fname, WorkerFactory factory) throws IOException {
         Yaml yaml = new Yaml();
         Map<String, List<Map<String, Object>>> data = yaml.load(Files.newBufferedReader(Paths.get(fname)));
 
@@ -48,7 +48,7 @@ public class EntityReader {
 
     }
 
-    public static void readMapFromYaml(TestScenario testScenario, String fname) throws IOException {
+    static void readMapFromYaml(TestScenario testScenario, String fname) throws IOException {
         Yaml yaml = new Yaml();
         Map<String, Map<String, List<Map<String, Object>>>> data = yaml.load(Files.newBufferedReader(Paths.get(fname)));
 

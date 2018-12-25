@@ -2,7 +2,6 @@ package k4case
 
 import java.nio.file.{Files, Paths}
 import java.util
-import java.util.stream.Collectors
 
 import org.joda.time.LocalDateTime
 import org.yaml.snakeyaml.Yaml
@@ -26,6 +25,8 @@ class TestScenario extends Model with Map2DTrait[NodeData] {
               val position: Position
             ) extends Component {
     name(s"Door ${id}")
+
+    override def toString = s"Door($id, $position)"
   }
 
   class Dispenser(
@@ -33,6 +34,8 @@ class TestScenario extends Model with Map2DTrait[NodeData] {
                  val position: Position
                  ) extends Component {
     name(s"Protection equipment dispenser ${id}")
+
+    override def toString = s"Dispenser($id, $position)"
   }
 
   class Worker(
@@ -41,6 +44,8 @@ class TestScenario extends Model with Map2DTrait[NodeData] {
                 val capabilities: Set[String]
               ) extends Component {
     name(s"Worker ${id}")
+
+    override def toString = s"Worker($id, $position, $capabilities)"
   }
 
   class Room (
@@ -58,6 +63,8 @@ class TestScenario extends Model with Map2DTrait[NodeData] {
                    val inRoom: Room
                  ) extends Room(id, position, entryDoor) {
     name(s"WorkPlace ${id}")
+
+    override def toString = s"WorkPlace($id, $position, $entryDoor, $inRoom)"
   }
 
   class Factory (
@@ -67,6 +74,8 @@ class TestScenario extends Model with Map2DTrait[NodeData] {
                   val dispenser: Dispenser
                 ) extends Room(id, position, entryDoor) {
     name(s"Factory ${id}")
+
+    override def toString = s"Factory($id, $position, $entryDoor, $dispenser)"
   }
 
   class Shift(
@@ -80,28 +89,43 @@ class TestScenario extends Model with Map2DTrait[NodeData] {
                val assignments: Map[Worker, String]
              ) extends Component {
     name(s"Shift ${id}")
+
+    override def toString = s"Shift($startTime, $endTime, $workPlace, $foreman, $workers, $standbys, $assignments)"
   }
 
   val workers = EntityReader.readWorkersFromYaml(this, "model.yaml", (id, pos, caps) => { new Worker(id, pos, caps)}).asInstanceOf[Set[Worker]]
 
-  def readWorkPlaces():Unit = {
+  def readRooms():Set[Room] = {
     val yaml = new Yaml()
     val data: util.Map[String, util.List[util.Map[String, AnyRef]]] = yaml.load(Files.newBufferedReader(Paths.get("model.yaml")))
     val wps = data.get("workplaces")
+    val roomsList = scala.collection.mutable.MutableList[Room]()
     wps.forEach(wp => {
-      // TODO 
-
+      val id = wp.get("id").toString
+      val position = EntityReader.readPosition(wp.get("position"))
+      val doorPosition = EntityReader.readPosition(wp.get("door"))
+      val door = new Door(id, doorPosition)
+      val inRoomString = wp.get("inRoom").toString
+      val inRoom = roomsList.toStream.filter(rm => rm.id.equals(inRoomString)).headOption
+      val dispenserRaw = Option[Object](wp.get("dispenser"))
+      val room = if (inRoomString.equals("None")) new Factory(id, position, door, new Dispenser(id, EntityReader.readPosition(dispenserRaw.get))) else new WorkPlace(id, position, door, inRoom.get)
+      roomsList += room
     })
+    return roomsList.toSet
   }
+  val rooms = readRooms()
 
-  def readShifts(): Unit = {
+  def readShifts(): Set[Shift] = {
     val yaml = new Yaml()
     val data: util.Map[String, util.List[util.Map[String, AnyRef]]] = yaml.load(Files.newBufferedReader(Paths.get("model.yaml")))
     val shifts = data.get("shifts")
+    val shiftsList = scala.collection.mutable.MutableList[Shift]()
     shifts.forEach(shift => {
       val id = shift.get("id").toString
       val startTime = LocalDateTime.fromDateFields(shift.get("startsAt").asInstanceOf[util.Date])
       val endTime = LocalDateTime.fromDateFields(shift.get("endsAt").asInstanceOf[util.Date])
+      val workPlaceName = shift.get("workPlace").toString
+      val workPlace = rooms.toStream.filter(rm => rm.id.equals(workPlaceName)).head.asInstanceOf[WorkPlace]
       val formanName = shift.get("foreman").toString
       val foreman = workers.toStream.filter(w => {w.id.equals(formanName)}).head
       val workersNames = shift.get("workers").asInstanceOf[util.List[Object]]
@@ -115,12 +139,13 @@ class TestScenario extends Model with Map2DTrait[NodeData] {
       val assignmentList = shift.get("assignment").asInstanceOf[util.List[util.Map[String, Object]]]
       val assignment = assignmentList.iterator().asScala.toStream.map(wk => {
         val worker = workers.toStream.filter(w => w.id.equals(wk.get("worker").toString)).head
-        (worker, wk.get("capability"))
+        (worker, wk.get("capability").toString)
       }).toMap
-      // TODO we need workplace
-      //new Shift(id, startTime, endTime, _, foreman, shiftWorkers, standby, assignment)
+      shiftsList += new Shift(id, startTime, endTime, workPlace, foreman, shiftWorkers, standby, assignment)
     })
+    return shiftsList.toSet
   }
+  val shifts = readShifts()
 
 //    val workplaceA =
 
@@ -174,7 +199,6 @@ object TestScenario {
     val scenario = new TestScenario
     scenario.init()
     EntityReader.readMapFromYaml(scenario, "model.yaml")
-    scenario.readShifts()
 
     /*
     val components = List(
