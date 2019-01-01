@@ -1,12 +1,12 @@
 package k4case
 
 import java.nio.file.{Files, Paths}
-import java.util
 import java.time.{LocalDateTime, ZoneId}
+import java.util
 
 import org.yaml.snakeyaml.Yaml
 import tcof._
-import tcof.traits.map2d.{Map2DTrait, Node, Position}
+import tcof.traits.map2d.{Map2DTrait, Position}
 
 import scala.collection.JavaConverters._
 
@@ -16,8 +16,6 @@ class TestScenario extends Model with Map2DTrait[NodeData] {
 
   case class HurryUpNotification(shift: Shift)
  // case class
-
-  import TestScenario.Capability._
   //import Notifications._
 
   class Door(
@@ -60,7 +58,7 @@ class TestScenario extends Model with Map2DTrait[NodeData] {
                    id: String,
                    position: Position,
                    entryDoor: Door,
-                   val inRoom: Room
+                   val factory: Factory
                  ) extends Room(id, position, entryDoor) {
     name(s"WorkPlace ${id}")
 
@@ -147,41 +145,85 @@ class TestScenario extends Model with Map2DTrait[NodeData] {
   }
   val shifts = readShifts()
 
-//    val workplaceA =
 
-//      val
- /* class ShiftTeam(shift: Shift) {
+/*
+  class ShiftTeam(shift: Shift) {
     // These are like invariants at a given point of time
     val cancelledWorkers = shift.workers.filter(wrk => wrk notified Notification(shift.id, ASSIGNMENT_CANCELED_DUE_LATENESS))
 
-    val workersInShift = shift.workers diff cancelledWorkers
+    val calledInStandbys = shift.standbys.filter(wrk => wrk notified Notification(shift.id, STANDBY_TO_WORKER))
+    val availableStandbys = shift.standbys diff calledInStandbys
 
-    class AccessToTheHall extends Ensemble {
+    val assignedWorkers = (shift.workers union calledInStandbys) diff cancelledWorkers
+
+    object AccessToTheHall extends Ensemble {
       constraints {
         now >= shift.startTime - 30 minutes &&
         now <= shift.endTime + 30 minutes
       }
 
-      allow(workersInShift, "enter", shift.workPlace)
+      allow(assignedWorkers, "enter", shift.workPlace)
     }
 
-    object NotificationOfWorkersThatAreLate extends Ensemble {
-      val workersThatAreLate = workersInShift.filter(wrk => !(wrk isAt shift.workPlace))
+    object NotificationOfWorkersThatArePotentiallyLate extends Ensemble {
+      val workersThatAreLate = assignedWorkers.filter(wrk => !(wrk isAt shift.workPlace))
 
       constraints {
         now >= shift.startTime - 20 minutes
       }
 
-      notify(workersThatAreLate, Notification(shift.id))
+      notifyOnce(workersThatAreLate, Notification(shift.id, HURRY_UP))
     }
 
+    object CancellationOfWorkersThatAreLate extends Ensemble {
+      val workersThatAreLate = assignedWorkers.filter(wrk => !(wrk isAt shift.workPlace))
 
+      constraints {
+        now >= shift.startTime - 15 minutes
+      }
 
-  } */
+      notifyOnce(workersThatAreLate, Notification(shift.id, ASSIGNMENT_CANCELED_DUE_LATENESS))
+    }
+
+    object AccessToTheDispenser extends Ensemble {
+      constraints {
+        now >= shift.startTime - 15 minutes &&
+        now <= shift.endTime
+      }
+
+      allow(assignedWorkers, "use", shift.workPlace.factory.dispenser)
+    }
+
+    object AssignmentOfStandbys extends Ensemble {
+      class StandbyAssignment(cancelledWorker: Worker) extends Ensemble {
+        val standby = oneOf(availableStandbys union calledInStandbys)
+
+        constraints {
+          shift.assignments(cancelledWorker) in standby.capabilities
+        }
+
+        fitness {
+          standby.sumSelected(wrk => if (calledInStandbys.contains(wrk)) 1 else 0)
+        }
+      }
+
+      val standbyAssignments = ensembles(cancelledWorkers.map(new StandbyAssignment(_)))
+
+      constraints {
+        now >= shift.startTime - 15 minutes &&
+        now <= shift.endTime &&
+        allDisjoint(standbyAssignments.map(_.standby))
+      }
+
+      fitness {
+        standbyAssignments.sum(_.fitness)
+      }
+    }
+  }
 
   /*root(new ShiftTeam(shiftA) ) */
 }
-
+*/
 
 object TestScenario {
 
