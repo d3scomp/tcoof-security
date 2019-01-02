@@ -5,17 +5,29 @@ import tcof.Utils._
 import scala.collection.mutable
 
 trait Ensemble extends WithConfig with WithName with WithUtility with WithEnsembleGroups with WithRoles with WithActionsInEnsemble with CommonImplicits with Initializable {
-  private[tcof] val _membershipClauseFuns = mutable.ListBuffer.empty[() => Logical]
+  private[tcof] val _constraintsClauseFuns = mutable.ListBuffer.empty[() => Logical]
+  private[tcof] var _situationFun: () => Boolean = null
 
   def constraints(clause: => Logical): Unit = {
-    _membershipClauseFuns += clause _
+    _constraintsClauseFuns += clause _
   }
 
-  private[tcof] def _buildEnsembleClause: Logical = {
-    if (_membershipClauseFuns.nonEmpty)
-      _solverModel.and(_membershipClauseFuns.map(_.apply()))
+  def situation(cond: => Boolean): Unit = {
+    _situationFun = cond _
+  }
+
+  private[tcof] def _buildConstraintsClause: Logical = {
+    if (_constraintsClauseFuns.nonEmpty)
+      _solverModel.and(_constraintsClauseFuns.map(_.apply()))
     else
-      null
+      LogicalBoolean(true)
+  }
+
+  private[tcof] def _isInSituation: Boolean = {
+    if (_situationFun != null)
+      _situationFun()
+    else
+      true
   }
 
   override def toString: String =

@@ -65,26 +65,19 @@ class SolverModel extends ChocoModel {
       LogicalBoolean(true)
   }
 
-  /** Creates a clause that enforces membership in membersVar if corresponding Logical in membersClauses is true */
-  def enforceSelected(membersClauses: Iterable[Logical], membersVar: SetVar): Logical = {
-    val clauses = mutable.ListBuffer.empty[ILogical]
-
+  /** Posts clauses that enforce membership in membersVar if corresponding Logical in membersClauses is true */
+  def postEnforceSelected(membersClauses: Iterable[Logical], membersVar: SetVar): Unit = {
     var idx = 0
     for (clause <- membersClauses) {
       clause match {
-        case LogicalBoolean(value) => if (value) clauses += member(idx, membersVar).reify
-        case LogicalBoolVar(value) => clauses += LogOp.implies(value, member(idx, membersVar).reify)
-        case LogicalLogOp(value) => clauses += LogOp.implies(value, member(idx, membersVar).reify)
+        case LogicalBoolean(value) => if (value) post(member(idx, membersVar))
+        case LogicalBoolVar(value) => ifThen(value, member(idx, membersVar))
+        case LogicalLogOp(value) => post(LogicalLogOp(LogOp.implies(value, member(idx, membersVar).reify)))
         case _ =>
       }
 
       idx = idx + 1
     }
-
-    if (clauses.nonEmpty)
-      LogicalLogOp(LogOp.and(clauses : _*))
-    else
-      LogicalBoolean(true)
   }
 
   /** Creates a clause that express the fact that at least one Logical clause in membersClauses has to be true for a member in membersVar */

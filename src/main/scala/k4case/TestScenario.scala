@@ -9,7 +9,7 @@ import tcof.traits.map2d.{Map2DTrait, Position}
 case class MapNodeData(id: String)
 
 class TestScenario extends Model with Map2DTrait[MapNodeData] with YamlModelLoader {
-  def now: LocalDateTime = null
+  var now: LocalDateTime = null
 
   case class HurryUpNotification(shift: Shift) extends Notification
   case class AssignmentCancelledNotification(shift: Shift) extends Notification
@@ -98,13 +98,10 @@ class TestScenario extends Model with Map2DTrait[MapNodeData] with YamlModelLoad
 
   val (map, workers, factories, shifts) = loadYamlModel("model.yaml")
 
-  println(map)
-  println(workers)
-  println(factories)
-  println(shifts)
-
 
   class ShiftTeam(shift: Shift) extends RootEnsemble {
+    name(s"Shift team ${shift.id}")
+
     // These are like invariants at a given point of time
     val cancelledWorkers = shift.workers.filter(wrk => wrk notified AssignmentCancelledNotification(shift))
 
@@ -115,7 +112,9 @@ class TestScenario extends Model with Map2DTrait[MapNodeData] with YamlModelLoad
 
 
     object AccessToTheHall extends Ensemble { // Kdyz se constraints vyhodnoti na LogicalBoolean, tak ten ensemble vubec nezatahujeme solver modelu a poznamename si, jestli vysel nebo ne
-      constraints {
+      name(s"AccessToHall")
+
+      situation {
         (now isAfter (shift.startTime minusMinutes 30)) &&
           (now isBefore (shift.endTime plusMinutes 30))
       }
@@ -125,29 +124,35 @@ class TestScenario extends Model with Map2DTrait[MapNodeData] with YamlModelLoad
 
 
     object NotificationOfWorkersThatArePotentiallyLate extends Ensemble {
+      name(s"NotificationOfWorkersThatArePotentiallyLate")
+
       val workersThatAreLate = assignedWorkers.filter(wrk => !(wrk isAt shift.workPlace))
 
-      constraints {
+      situation {
         now isAfter (shift.startTime minusMinutes 20)
       }
 
-      notifyOnce(workersThatAreLate, HurryUpNotification(shift))
+      notify(workersThatAreLate, HurryUpNotification(shift))
     }
 
 
     object CancellationOfWorkersThatAreLate extends Ensemble {
+      name(s"CancellationOfWorkersThatAreLate")
+
       val workersThatAreLate = assignedWorkers.filter(wrk => !(wrk isAt shift.workPlace))
 
-      constraints {
+      situation {
         now isAfter (shift.startTime minusMinutes 15)
       }
 
-      notifyOnce(workersThatAreLate, AssignmentCancelledNotification(shift))
+      notify(workersThatAreLate, AssignmentCancelledNotification(shift))
     }
 
 
     object AccessToTheDispenser extends Ensemble {
-      constraints {
+      name(s"AccessToTheDispenser")
+
+      situation {
         (now isAfter (shift.startTime minusMinutes 15)) &&
           (now isBefore shift.endTime)
       }
@@ -155,9 +160,12 @@ class TestScenario extends Model with Map2DTrait[MapNodeData] with YamlModelLoad
       allow(assignedWorkers, "use", shift.workPlace.factory.dispenser)
     }
 
-/*
     object AssignmentOfStandbys extends Ensemble {
+      name(s"AssignmentOfStandbys")
+
       class StandbyAssignment(cancelledWorker: Worker) extends Ensemble {
+        name(s"StandbyAssignment for ${cancelledWorker.id}")
+
         val standby = oneOf(availableStandbys union calledInStandbys)
 
         constraints {
@@ -169,21 +177,24 @@ class TestScenario extends Model with Map2DTrait[MapNodeData] with YamlModelLoad
         }
       }
 
-      val standbyAssignments = ensembles(cancelledWorkers.map(new StandbyAssignment(_)))
+      val standbyAssignments = rules(cancelledWorkers.map(new StandbyAssignment(_)))
+
+      situation {
+        (now isAfter (shift.startTime minusMinutes 15)) &&
+        (now isBefore shift.endTime)
+      }
 
       constraints {
-        (now isAfter (shift.startTime minusMinutes 15)) &&
-          (now isBefore shift.endTime) &&
-          allDisjoint(standbyAssignments.map(_.standby))
+        standbyAssignments.map(_.standby).allDisjoint
       }
 
       utility {
         standbyAssignments.sum(_.utility)
       }
-    }
-*/
 
-    createIfPossible(
+    }
+
+    rules(
       AccessToTheHall,
       NotificationOfWorkersThatArePotentiallyLate,
       CancellationOfWorkersThatAreLate,
@@ -192,7 +203,7 @@ class TestScenario extends Model with Map2DTrait[MapNodeData] with YamlModelLoad
 
   }
 
-  // root(new ShiftTeam(shiftA))
+  val rootEnsemble = root(new ShiftTeam(shifts(0)))
 }
 
 object TestScenario {
@@ -201,7 +212,8 @@ object TestScenario {
     val scenario = new TestScenario
     scenario.init()
 
-  /*
+    scenario.now = LocalDateTime.parse("2018-12-03T09:40:00")
+
     scenario.rootEnsemble.init()
     println("System initialized")
 
@@ -212,7 +224,6 @@ object TestScenario {
     scenario.rootEnsemble.commit()
 
     println(scenario.rootEnsemble.instance.solutionUtility)
-    */
   }
 
 }

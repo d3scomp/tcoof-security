@@ -13,15 +13,15 @@ object YamlLoader {
 
   class YamlValue(val value: AnyRef) {
     def asMap: YamlDict = YamlValue.toMap(this)
-    def asList[T](implicit transformation: YamlValue => T): List[T] = YamlValue.toList(this)(transformation)
+    def asList[T](implicit upcastFn: YamlValue => T): List[T] = YamlValue.toList(this)(upcastFn)
   }
 
   object YamlValue {
     def apply(value: AnyRef) = new YamlValue(value)
 
     implicit def toMap(value: YamlValue): YamlDict = value.value.asInstanceOf[util.Map[String, AnyRef]].asScala.mapValues(YamlValue(_)).toMap
-    implicit def toList[T](value: YamlValue)(implicit transformation: YamlValue => T): List[T] = value.value.asInstanceOf[util.List[AnyRef]].asScala.map(YamlValue(_)).toList.map(transformation)
-    implicit def toSet[T](value: YamlValue)(implicit transformation: YamlValue => T): Set[T] = toList(value)(transformation).toSet
+    implicit def toList[T](value: YamlValue)(implicit upcastFn: YamlValue => T): List[T] = value.value.asInstanceOf[util.List[AnyRef]].asScala.map(YamlValue(_)).toList.map(upcastFn)
+    implicit def toSet[T](value: YamlValue)(implicit upcastFn: YamlValue => T): Set[T] = toList(value)(upcastFn).toSet
     implicit def toString(value: YamlValue): String = value.value.toString
     implicit def toInt(value: YamlValue): Int = value.value.asInstanceOf[Int]
     implicit def toBoolean(value: YamlValue): Boolean = value.value.asInstanceOf[Boolean]

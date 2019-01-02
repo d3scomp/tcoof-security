@@ -1,9 +1,12 @@
 package tcof
 
+import org.chocosolver.solver.constraints.Constraint
 import tcof.InitStages.InitStages
 import tcof.Utils._
 
-class EnsembleGroup[+EnsembleType <: Ensemble](val name: String, private[tcof] val allMembers: EnsembleGroupMembers[EnsembleType], private[tcof] val createMemberIfCanExist: Boolean) extends WithMembers[EnsembleType] with WithConfig with Initializable {
+class EnsembleGroup[+EnsembleType <: Ensemble]
+    (val name: String, private[tcof] val allMembers: EnsembleGroupMembers[EnsembleType], private[tcof] val extraRulesFn: (EnsembleGroup[Ensemble], Logical, Iterable[Logical]) => Unit)
+    extends WithMembers[EnsembleType] with WithConfig with Initializable with CommonImplicits {
 
   private[tcof] var parentGroup: EnsembleGroup[_ <: Ensemble] = null
   private[tcof] var indexInParentGroup: Int = _
@@ -22,16 +25,23 @@ class EnsembleGroup[+EnsembleType <: Ensemble](val name: String, private[tcof] v
         }
 
       case InitStages.RulesCreation =>
+        var ensembleGroupActive: Logical = LogicalBoolean(true)
+
         if (parentGroup != null) {
+          val ensembleGroupActiveCond = _solverModel.member(indexInParentGroup, parentGroup.allMembersVar)
+          ensembleGroupActive = LogicalBoolVar(ensembleGroupActiveCond.reify())
+
           for (idx <- 0 until allMembers.size) {
-            _solverModel.ifThen(_solverModel.member(idx, allMembersVar), _solverModel.member(indexInParentGroup, parentGroup.allMembersVar))
+            _solverModel.ifThen(_solverModel.member(idx, allMembersVar), ensembleGroupActiveCond)
           }
         }
 
-        _solverModel.forAllSelected(allMembers.map(_._buildEnsembleClause), allMembersVar)
+        val constraintsClauses = allMembers.map(ens => ens._isInSituation && ens._buildConstraintsClause)
 
-        if (createMemberIfCanExist) {
-          _solverModel.enforceSelected(allMembers.map(_._buildEnsembleClause), allMembersVar)
+        _solverModel.post(_solverModel.forAllSelected(constraintsClauses, allMembersVar))
+
+        if (extraRulesFn != null) {
+          extraRulesFn(this, ensembleGroupActive, constraintsClauses)
         }
 
       case _ =>

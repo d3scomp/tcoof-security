@@ -12,12 +12,12 @@ class RootEnsemble extends Ensemble {
     stage match {
       case InitStages.RulesCreation =>
         val sm = _solverModel
-        utility match {
+        _getUtility match {
           case Some(sm.IntegerIntVar(utilityVar)) => _solverModel.setObjective(Model.MAXIMIZE, utilityVar)
           case _ =>
         }
 
-        _solverModel.post(_buildEnsembleClause)
+        _solverModel.post(_buildConstraintsClause)
       case _ =>
     }
   }

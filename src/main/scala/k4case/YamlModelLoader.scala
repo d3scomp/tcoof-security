@@ -72,19 +72,19 @@ trait YamlModelLoader {
     val mapYaml = model("map").asMap
 
     val mapNodes = mutable.Map.empty[String, Node[MapNodeData]]
-    for (point <- mapYaml("points").asList[YamlDict]) {
-      val node = map.addNode(point("position"))
-      node.data = MapNodeData(point("id"))
+    for (pointYaml <- mapYaml("points").asList[YamlDict]) {
+      val node = map.addNode(pointYaml("position"))
+      node.data = MapNodeData(pointYaml("id"))
       mapNodes(node.data.id) = node
     }
 
-    for (edge <- mapYaml("edges").asList[YamlDict]) {
-      val fromNode = mapNodes(edge("nodeOut"))
-      val toNode = mapNodes(edge("nodeIn"))
+    for (edgeYaml <- mapYaml("edges").asList[YamlDict]) {
+      val fromNode = mapNodes(edgeYaml("nodeOut"))
+      val toNode = mapNodes(edgeYaml("nodeIn"))
 
       map.addDirectedEdge(fromNode, toNode)
 
-      if (edge("bidirectional")) {
+      if (edgeYaml("bidirectional")) {
         map.addDirectedEdge(toNode, fromNode)
       }
     }

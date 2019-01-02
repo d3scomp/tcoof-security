@@ -3,6 +3,7 @@ package tcof
 import tcof.InitStages.InitStages
 
 trait WithUtility extends Initializable {
+  this: WithConfig =>
 
   private var _utilityFun: Option[() => Integer] = None
 
@@ -12,13 +13,15 @@ trait WithUtility extends Initializable {
 
   private var _utility: Option[Integer] = null
 
-  private[tcof] def utility: Option[Integer] = {
+  private[tcof] def _getUtility: Option[Integer] = {
     if (_utility == null) {
       _utility = _utilityFun.map(_.apply())
     }
 
     _utility
   }
+
+  def utility: Integer = _getUtility.getOrElse(_solverModel.IntegerInt(0))
 
   def solutionUtility: Int = _utility match {
     case Some(value) => value.solutionValue

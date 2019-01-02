@@ -15,19 +15,30 @@ trait WithActionsInEnsemble extends WithActions {
     _actions.foreach(_())
   }
 
-  def allow(objct: Component, action: String, subjects: Seq[Component]): Unit = allow(List(objct), action, subjects)
-  def allow(objects: Seq[Component], action: String, subject: Component): Unit = allow(objects, action, List(subject))
+  def allow(subjects: Seq[Component], action: String, objct: Component): Unit = allow(subjects, action, List(objct))
+  def allow(subject: Component, action: String, objects: Seq[Component]): Unit = allow(List(subject), action, objects)
 
-  def allow(objects: Seq[Component], action: String, subjects: Seq[Component]): Unit = {
-      // FIXME
+  def allow(subjects: Seq[Component], action: String, objects: Seq[Component]): Unit = {
+    _actions += (
+      () => {
+        for {
+          objct <- objects
+          subject <- subjects
+        } {
+          println(s"Allow ${subject} ${action} ${objct}")
+        }
+      }
+    )
   }
 
 
-  def notifyOnce(subject: Component, notification: Notification): Unit = notifyOnce(List(subject), notification)
-
-  def notifyOnce(subjects: Seq[Component], notification: Notification): Unit = {
-    for (subject <- subjects) {
-      subject.notify(notification)
-    }
+  def notify(subjects: Seq[Component], notification: Notification): Unit = {
+    _actions += (
+      () => {
+        for (subject <- subjects) {
+          subject.notify(notification)
+        }
+      }
+    )
   }
 }
