@@ -6,10 +6,6 @@ import org.chocosolver.solver.Model
 class RootEnsemble extends Ensemble {
   name("<root>")
 
-  utility(_solverModel.sum(
-    _ensembleGroups.values.map(_.sum(_.utility.getOrElse(_solverModel.IntegerInt(0))))
-  ))
-
   override private[tcof] def _init(stage: InitStages, config: Config): Unit = {
     super._init(stage, config)
 

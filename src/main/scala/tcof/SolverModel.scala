@@ -43,7 +43,7 @@ class SolverModel extends ChocoModel {
     }
   }
 
-  /** Creates clauses that express the fact the membership in membersVar implies corresponding Logical in membersClauses */
+  /** Creates a clause that express the fact the membership in membersVar implies corresponding Logical in membersClauses */
   def forAllSelected(membersClauses: Iterable[Logical], membersVar: SetVar): Logical = {
     val clauses = mutable.ListBuffer.empty[ILogical]
 
@@ -65,6 +65,29 @@ class SolverModel extends ChocoModel {
       LogicalBoolean(true)
   }
 
+  /** Creates a clause that enforces membership in membersVar if corresponding Logical in membersClauses is true */
+  def enforceSelected(membersClauses: Iterable[Logical], membersVar: SetVar): Logical = {
+    val clauses = mutable.ListBuffer.empty[ILogical]
+
+    var idx = 0
+    for (clause <- membersClauses) {
+      clause match {
+        case LogicalBoolean(value) => if (value) clauses += member(idx, membersVar).reify
+        case LogicalBoolVar(value) => clauses += LogOp.implies(value, member(idx, membersVar).reify)
+        case LogicalLogOp(value) => clauses += LogOp.implies(value, member(idx, membersVar).reify)
+        case _ =>
+      }
+
+      idx = idx + 1
+    }
+
+    if (clauses.nonEmpty)
+      LogicalLogOp(LogOp.and(clauses : _*))
+    else
+      LogicalBoolean(true)
+  }
+
+  /** Creates a clause that express the fact that at least one Logical clause in membersClauses has to be true for a member in membersVar */
   def existsSelected(membersClauses: Iterable[Logical], membersVar: SetVar): Logical = {
     val clauses = mutable.ListBuffer.empty[ILogical]
 

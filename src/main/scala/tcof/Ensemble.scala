@@ -7,14 +7,15 @@ import scala.collection.mutable
 trait Ensemble extends WithConfig with WithName with WithUtility with WithEnsembleGroups with WithRoles with WithActionsInEnsemble with CommonImplicits with Initializable {
   private[tcof] val _membershipClauseFuns = mutable.ListBuffer.empty[() => Logical]
 
-  def membership(clause: => Logical): Unit = {
+  def constraints(clause: => Logical): Unit = {
     _membershipClauseFuns += clause _
   }
 
   private[tcof] def _buildEnsembleClause: Logical = {
     if (_membershipClauseFuns.nonEmpty)
-      _buildEnsembleGroupClause && _solverModel.and(_membershipClauseFuns.map(_.apply()))
-    else _buildEnsembleGroupClause
+      _solverModel.and(_membershipClauseFuns.map(_.apply()))
+    else
+      null
   }
 
   override def toString: String =

@@ -8,8 +8,6 @@ class Role[+ComponentType <: Component](val name: String, private[tcof] val pare
 
   def cloneEquiv = new RoleMembersEquiv(this)
 
-  def cloneCond = new RoleMembersCond(this)
-
   def ++[OtherType >: ComponentType <: Component](other: Role[OtherType]): Role[OtherType] = {
     require(parent == other.parent)
     parent.role(cloneEquiv ++ other.cloneEquiv)

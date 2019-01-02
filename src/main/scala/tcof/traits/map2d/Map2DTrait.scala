@@ -4,8 +4,7 @@ import tcof.traits.Trait
 
 
 trait Map2DTrait[NodeDataType] extends Trait {
-
-  val map: Map2D[NodeDataType] = new Map2D[NodeDataType]
+  def map: Map2D[NodeDataType]
 
   override def init(): Unit = {
     super.init()

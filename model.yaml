@@ -5,10 +5,10 @@ employees:
     nationalId: 1100000001
     familyStatus: married
     reportedLeave:
-        start: 2018-09-01
-        end: 2018-09-30
+      start: 2018-09-01
+      end: 2018-09-30
     position: [ 10, 90 ]
-    capabilites: [A, B, C, D, E]
+    capabilities: [A, B, C, D, E]
   - id: 1100000002
     name: Jane Doe
     phone: +420100000002
@@ -18,7 +18,7 @@ employees:
       start: 2018-09-01
       end: 2018-09-30
     position: [ 10, 90 ]
-    capabilites: [A, B, C, D, E]
+    capabilities: [A, B, C, D, E]
   - id: 1100000003
     name: Eddard Stark
     phone: +420100000003
@@ -26,7 +26,7 @@ employees:
     familyStatus: married
     reportedLeave:
     position: [ 10, 90 ]
-    capabilites: [A, B, C, D, E]
+    capabilities: [A, B, C, D, E]
   - id: 1100000004
     name: Catelyn Stark
     phone: +420100000004
@@ -34,7 +34,7 @@ employees:
     familyStatus: married
     reportedLeave:
     position: [ 10, 90 ]
-    capabilites: [A, B, C, D, E]
+    capabilities: [A, B, C, D, E]
   - id: 1100000005
     name: Jon Snow
     phone: +420100000005
@@ -42,7 +42,7 @@ employees:
     familyStatus: single
     reportedLeave:
     position: [ 10, 90 ]
-    capabilites: [A, B, C, D, E]
+    capabilities: [A, B, C, D, E]
   - id: 1100000006
     name: Sansa Stark
     phone: +420100000006
@@ -50,7 +50,7 @@ employees:
     familyStatus: married
     reportedLeave:
     position: [ 10, 90 ]
-    capabilites: [A, B, C, D, E]
+    capabilities: [A, B, C, D, E]
   - id: 1100000007
     name: Bran Stark
     phone: +420100000007
@@ -58,7 +58,7 @@ employees:
     familyStatus: single
     reportedLeave:
     position: [ 10, 90 ]
-    capabilites: [A, B, C, D, E]
+    capabilities: [A, B, C, D, E]
   - id: 1100000008
     name: Daenerys Targaryen
     phone: +420100000008
@@ -66,7 +66,7 @@ employees:
     familyStatus: married
     reportedLeave:
     position: [ 10, 90 ]
-    capabilites: [A, B, C, D, E]
+    capabilities: [A, B, C, D, E]
   - id: 1100000009
     name: Jaime Lannister
     phone: +420100000009
@@ -74,25 +74,25 @@ employees:
     familyStatus: single
     reportedLeave:
     position: [ 10, 90 ]
-    capabilites: [A, B, C, D, E]
-workplaces:
+    capabilities: [A, B, C, D, E]
+factories:
   - id: Factory
     position: [0, 0]
     door: [20, 90]
     dispenser: [30, 90]
-    inRoom: None
-  - id: WP1
-    position: [50, 50]
-    door: [40, 50]
-    inRoom: Factory
-  - id: WP2
-    position: [130, 50]
-    door: [120, 50]
-    inRoom: Factory
-  - id: WP3
-    position: [130, 105]
-    door: [120, 105]
-    inRoom: Factory
+    workplaces:
+      - id: WP1
+        position: [50, 50]
+        door: [40, 50]
+        factory: Factory
+      - id: WP2
+        position: [130, 50]
+        door: [120, 50]
+        factory: Factory
+      - id: WP3
+        position: [130, 105]
+        door: [120, 105]
+        factory: Factory
 map:
   points:
     - id: outside
@@ -126,43 +126,43 @@ map:
   edges:
     - nodeIn: outside
       nodeOut: dispenser
-      bidirectional: yes
+      bidirectional: true
     - nodeIn: dispenser
       nodeOut: point1toWP1
-      bidirectional: yes
+      bidirectional: true
     - nodeIn: point1toWP1
       nodeOut: point2toWP1
-      bidirectional: yes
+      bidirectional: true
     - nodeIn: point2toWP1
       nodeOut: WP1
-      bidirectional: yes
+      bidirectional: true
     - nodeIn: dispenser
       nodeOut: point1toWP23
-      bidirectional: yes
+      bidirectional: true
     - nodeIn: point1toWP23
       nodeOut: point2toWP23
-      bidirectional: yes
+      bidirectional: true
     - nodeIn: point2toWP23
       nodeOut: point3toWP23
-      bidirectional: yes
+      bidirectional: true
     - nodeIn: point3toWP23
       nodeOut: junctiontoWP23
-      bidirectional: yes
+      bidirectional: true
     - nodeIn: junctiontoWP23
       nodeOut: point1toWP2
-      bidirectional: yes
+      bidirectional: true
     - nodeIn: point1toWP2
       nodeOut: point2toWP2
-      bidirectional: yes
+      bidirectional: true
     - nodeIn: point2toWP2
       nodeOut: WP2
-      bidirectional: yes
+      bidirectional: true
     - nodeIn: junctiontoWP23
       nodeOut: point1toWP3
-      bidirectional: yes
+      bidirectional: true
     - nodeIn: point1toWP3
       nodeOut: WP3
-      bidirectional: yes
+      bidirectional: true
 shifts:
   - id: Shift1
     startsAt: 2018-12-03T09:00:00
@@ -170,7 +170,7 @@ shifts:
     workPlace: WP1
     foreman: 1100000003
     workers: [1100000004, 1100000006, 1100000007]
-    standby: [1100000005]
+    standbys: [1100000005]
     assignment:
       - worker: 1100000004
         capability: A
@@ -184,7 +184,7 @@ shifts:
     workPlace: WP2
     foreman: 1100000008
     workers: [1100000001, 1100000002, 1100000009]
-    standby: [1100000005]
+    standbys: [1100000005]
     assignment:
       - worker: 1100000001
         capability: A

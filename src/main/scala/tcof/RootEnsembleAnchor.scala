@@ -29,8 +29,6 @@ class RootEnsembleAnchor[EnsembleType <: RootEnsemble] private[tcof](val builder
     for (stage <- InitStages.values) {
       _solution._init(stage, config)
     }
-
-    instance._executePreActions()
   }
 
   def solve(): Boolean = _solution._solverModel.solveAndRecord()

@@ -4,7 +4,7 @@ name := "tcof-security"
 
 version := "1.0"
 
-scalaVersion := "2.12.0"
+scalaVersion := "2.12.8"
 
 compileOrder := CompileOrder.Mixed
 
@@ -12,10 +12,8 @@ resolvers += "SnakeYAML repository" at "http://oss.sonatype.org/content/groups/p
 
 libraryDependencies ++= Seq(
 
-  "joda-time" % "joda-time" % "2.10.1",
-
   // Required for mpmens
-  "org.scala-lang" % "scala-reflect" % "2.12.0",
+  "org.scala-lang" % "scala-reflect" % "2.12.8",
   "org.choco-solver" % "choco-solver" % "4.0.0",
 
   // Required for map2d trait
