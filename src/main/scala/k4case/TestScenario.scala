@@ -103,6 +103,7 @@ class TestScenario extends Model with Map2DTrait[MapNodeData] with YamlModelLoad
   println(factories)
   println(shifts)
 
+
   class ShiftTeam(shift: Shift) extends RootEnsemble {
     // These are like invariants at a given point of time
     val cancelledWorkers = shift.workers.filter(wrk => wrk notified AssignmentCancelledNotification(shift))
@@ -112,6 +113,7 @@ class TestScenario extends Model with Map2DTrait[MapNodeData] with YamlModelLoad
 
     val assignedWorkers = (shift.workers union calledInStandbys) diff cancelledWorkers
 
+
     object AccessToTheHall extends Ensemble { // Kdyz se constraints vyhodnoti na LogicalBoolean, tak ten ensemble vubec nezatahujeme solver modelu a poznamename si, jestli vysel nebo ne
       constraints {
         (now isAfter (shift.startTime minusMinutes 30)) &&
@@ -120,6 +122,7 @@ class TestScenario extends Model with Map2DTrait[MapNodeData] with YamlModelLoad
 
       allow(assignedWorkers, "enter", shift.workPlace)
     }
+
 
     object NotificationOfWorkersThatArePotentiallyLate extends Ensemble {
       val workersThatAreLate = assignedWorkers.filter(wrk => !(wrk isAt shift.workPlace))
@@ -131,6 +134,7 @@ class TestScenario extends Model with Map2DTrait[MapNodeData] with YamlModelLoad
       notifyOnce(workersThatAreLate, HurryUpNotification(shift))
     }
 
+
     object CancellationOfWorkersThatAreLate extends Ensemble {
       val workersThatAreLate = assignedWorkers.filter(wrk => !(wrk isAt shift.workPlace))
 
@@ -140,6 +144,7 @@ class TestScenario extends Model with Map2DTrait[MapNodeData] with YamlModelLoad
 
       notifyOnce(workersThatAreLate, AssignmentCancelledNotification(shift))
     }
+
 
     object AccessToTheDispenser extends Ensemble {
       constraints {
@@ -156,27 +161,27 @@ class TestScenario extends Model with Map2DTrait[MapNodeData] with YamlModelLoad
         val standby = oneOf(availableStandbys union calledInStandbys)
 
         constraints {
-          shift.assignments(cancelledWorker) in standby.capabilities
+          standby.all(_.capabilities contains shift.assignments(cancelledWorker))
         }
 
-        fitness {
-          standby.sumSelected(wrk => if (calledInStandbys.contains(wrk)) 1 else 0)
+        utility {
+          standby.sum(wrk => if (calledInStandbys contains wrk) 1 else 0)
         }
       }
 
       val standbyAssignments = ensembles(cancelledWorkers.map(new StandbyAssignment(_)))
 
       constraints {
-        now >= shift.startTime - 15 minutes &&
-        now <= shift.endTime &&
+        (now isAfter (shift.startTime minusMinutes 15)) &&
+          (now isBefore shift.endTime) &&
           allDisjoint(standbyAssignments.map(_.standby))
       }
 
-      fitness {
-        standbyAssignments.sum(_.fitness)
+      utility {
+        standbyAssignments.sum(_.utility)
       }
     }
-
+*/
 
     createIfPossible(
       AccessToTheHall,
@@ -184,7 +189,6 @@ class TestScenario extends Model with Map2DTrait[MapNodeData] with YamlModelLoad
       CancellationOfWorkersThatAreLate,
       AccessToTheDispenser
     )
-*/
 
   }
 
