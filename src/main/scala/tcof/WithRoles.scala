@@ -5,14 +5,16 @@ import tcof.Utils._
 
 import scala.collection.mutable
 
-trait WithRoles extends Initializable {
+trait WithRoles extends Initializable with CommonImplicits {
   this: WithConfig =>
 
   private[tcof] val _roles: mutable.Map[String, Role[Component]] = mutable.Map.empty[String, Role[Component]]
 
-  def role[ComponentType <: Component](items: RoleMembers[ComponentType]): Role[ComponentType] = role(randomName, items)
-  def role[ComponentType <: Component](name: String, items: RoleMembers[ComponentType]): Role[ComponentType] = {
-    val role = new Role[ComponentType](name, this, items)
+  def oneOf[ComponentType <: Component](items: RoleMembers[ComponentType]): Role[ComponentType] =
+    _addRole(randomName, items, cardinality => cardinality === 1)
+
+  def _addRole[ComponentType <: Component](name: String, items: RoleMembers[ComponentType], cardinalityConstraints: Integer => Logical): Role[ComponentType] = {
+    val role = new Role[ComponentType](name, this, items, cardinalityConstraints)
     _roles += name -> role
     role
   }

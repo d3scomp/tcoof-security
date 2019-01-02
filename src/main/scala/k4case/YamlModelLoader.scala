@@ -14,10 +14,11 @@ trait YamlModelLoader {
 
     val workers = for {
       workerYaml <- model("employees").asList[YamlDict]
+
     } yield new Worker(
-      workerYaml("id"),
-      workerYaml("position"),
-      workerYaml("capabilities")
+      id = workerYaml("id"),
+      position = workerYaml("position"),
+      capabilities = workerYaml("capabilities")
     )
 
 
@@ -26,27 +27,27 @@ trait YamlModelLoader {
 
       factoryId = factoryYaml("id"): String
 
-      workplaces = for {
-        workplaceYaml <- factoryYaml("workplaces").asList[YamlDict]
-        workplaceId = workplaceYaml("id"): String
+      workPlaces = for {
+        workPlaceYaml <- factoryYaml("workPlaces").asList[YamlDict]
+        workPlaceId = workPlaceYaml("id"): String
 
       } yield new WorkPlace(
-        workplaceId,
-        workplaceYaml("position"),
-        new Door(workplaceId, workplaceYaml("door"))
+        id = workPlaceId,
+        position = workPlaceYaml("position"),
+        entryDoor = new Door(workPlaceId, workPlaceYaml("door"))
       )
 
     } yield new Factory(
-      factoryId,
-      factoryYaml("position"),
-      new Door(factoryId + "_door", factoryYaml("door")),
-      new Dispenser(factoryId + "_dispenser", factoryYaml("dispenser")),
-      workplaces
+      id = factoryId,
+      position = factoryYaml("position"),
+      entryDoor = new Door(factoryId + "_door", factoryYaml("door")),
+      dispenser = new Dispenser(factoryId + "_dispenser", factoryYaml("dispenser")),
+      workPlaces = workPlaces
     )
 
 
     val workersMap = Map(workers.map(x => x.id -> x) : _*)
-    val workplacesMap = Map(factories.flatMap(_.workplaces.map(x => x.id -> x)) : _*)
+    val workPlacesMap = Map(factories.flatMap(_.workPlaces.map(x => x.id -> x)) : _*)
 
     val shifts = for {
       shiftYaml <- model("shifts").asList[YamlDict]
@@ -56,14 +57,14 @@ trait YamlModelLoader {
       )
 
     } yield new Shift(
-      shiftYaml("id"),
-      shiftYaml("startsAt"),
-      shiftYaml("endsAt"),
-      workplacesMap(shiftYaml("workPlace")),
-      workersMap(shiftYaml("foreman")),
-      shiftYaml("workers").asList[String].map(workersMap(_)),
-      shiftYaml("standbys").asList[String].map(workersMap(_)),
-      Map[Worker, String](assignmentPairs: _*)
+      id = shiftYaml("id"),
+      startTime = shiftYaml("startsAt"),
+      endTime = shiftYaml("endsAt"),
+      workPlace = workPlacesMap(shiftYaml("workPlace")),
+      foreman = workersMap(shiftYaml("foreman")),
+      workers = shiftYaml("workers").asList[String].map(workersMap(_)),
+      standbys = shiftYaml("standbys").asList[String].map(workersMap(_)),
+      assignments = Map[Worker, String](assignmentPairs: _*)
     )
 
 

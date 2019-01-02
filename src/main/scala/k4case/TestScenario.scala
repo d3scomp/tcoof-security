@@ -70,15 +70,15 @@ class TestScenario extends Model with Map2DTrait[MapNodeData] with YamlModelLoad
                  position: Position,
                  entryDoor: Door,
                  val dispenser: Dispenser,
-                 val workplaces: List[WorkPlace]
+                 val workPlaces: List[WorkPlace]
                ) extends Room(id, position, entryDoor) {
     name(s"Factory ${id}")
 
-    for (workplace <- workplaces) {
-      workplace.factory = this
+    for (workPlace <- workPlaces) {
+      workPlace.factory = this
     }
 
-    override def toString = s"Factory($id, $position, $entryDoor, $dispenser, $workplaces)"
+    override def toString = s"Factory($id, $position, $entryDoor, $dispenser, $workPlaces)"
   }
 
   class Shift(

@@ -80,7 +80,7 @@ factories:
     position: [0, 0]
     door: [20, 90]
     dispenser: [30, 90]
-    workplaces:
+    workPlaces:
       - id: WP1
         position: [50, 50]
         door: [40, 50]
