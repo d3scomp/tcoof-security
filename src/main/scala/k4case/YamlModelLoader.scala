@@ -34,7 +34,7 @@ trait YamlModelLoader {
       } yield new WorkPlace(
         id = workPlaceId,
         position = workPlaceYaml("position"),
-        entryDoor = new Door(workPlaceId, workPlaceYaml("door"))
+        entryDoor = new Door(workPlaceId + "_door", workPlaceYaml("door"))
       )
 
     } yield new Factory(
