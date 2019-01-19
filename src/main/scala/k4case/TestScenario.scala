@@ -326,14 +326,14 @@ class TestScenario extends Model with ModelGenerator {
 
 object TestScenario {
   println("Saving log to test-scenario.log")
-  val logPrintWriter = new PrintWriter(new File("test-scenario.txt"))
+  val logPrintWriter = new PrintWriter(new File("test-scenario.log"))
 
   def log(): Unit = {
-    //logPrintWriter.println()
+    logPrintWriter.println()
   }
 
   def log(msg: Any): Unit = {
-    //logPrintWriter.println(msg)
+    logPrintWriter.println(msg)
   }
 
   def main(args: Array[String]): Unit = {
@@ -399,7 +399,6 @@ object TestScenario {
       var perfAggTime = 0L
 
       for (measurementIdx <- 0 until measurementsCount) {
-        print("Start " + System.currentTimeMillis() + "   ")
         val perfStartTime = System.currentTimeMillis()
 
         shiftTeams.init()
@@ -408,7 +407,6 @@ object TestScenario {
         }
         println()
 
-        println("Stop " + System.currentTimeMillis())
         val perfEndTime = System.currentTimeMillis()
         println("Computation time (exists " + shiftTeams.exists + "): " + (perfEndTime - perfStartTime) / 1000.0 + " seconds")
         Console.out.flush()
@@ -418,8 +416,6 @@ object TestScenario {
 
       println("Average time: " + perfAggTime / 1000.0 / measurementsCount + " seconds")
     }
-
-
 
   }
 

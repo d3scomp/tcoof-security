@@ -1,13 +1,6 @@
-# tcoof-security
-Trait-based Coalition Formation Framework for dynamic security situations
+# Dynamic Security Adaptation Controller
 
-<!-- master: [![Build Status](https://travis-ci.org/d3scomp/tcof.svg?branch=master)](https://travis-ci.org/d3scomp/tcoof) -->
-<!-- develop: [![Build Status](https://travis-ci.org/d3scomp/tcof.svg?branch=develop)](https://travis-ci.org/d3scomp/tcoof/branches) -->
-
-<!--
-## Documentation
-See [companion page](https://github.com/d3scomp/tcof/blob/master/TECHNICAL.md).
--->
+Ensemble-based situational framework for dynamic security situations
 
 ## Development
 
@@ -15,4 +8,4 @@ See [companion page](https://github.com/d3scomp/tcof/blob/master/TECHNICAL.md).
 2. Install [IDEA](https://www.jetbrains.com/idea/), install Scala plugin.
 3. Import the project.
 4.  Set JDK8 as project SDK in File - Project Structure
-5. Run `example/SecurityScenario.scala`.
+5. Run `k4case/TestScenario.scala`.
