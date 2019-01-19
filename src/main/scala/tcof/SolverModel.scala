@@ -1,8 +1,12 @@
 package tcof
 
 import org.chocosolver.solver.constraints.nary.cnf.{ILogical, LogOp}
-import org.chocosolver.solver.variables.{IntVar, SetVar}
-import org.chocosolver.solver.{Model => ChocoModel, Solution}
+import org.chocosolver.solver.search.strategy.Search
+import org.chocosolver.solver.search.strategy.selectors.values.{RealDomainMax, RealDomainMin}
+import org.chocosolver.solver.search.strategy.selectors.variables.Cyclic
+import org.chocosolver.solver.search.strategy.strategy.AbstractStrategy
+import org.chocosolver.solver.variables.{IntVar, RealVar, SetVar, Variable}
+import org.chocosolver.solver.{ResolutionPolicy, Solution, Model => ChocoModel}
 
 import scala.collection.mutable
 
@@ -31,6 +35,25 @@ class SolverModel extends ChocoModel {
       }
 
       LogicalLogOp(LogOp.and(ilogs toArray: _*))
+    }
+  }
+
+  def or(clauses: Iterable[Logical]): Logical = {
+    if (clauses.exists {
+      case LogicalBoolean(value) if value => true
+      case _ => false
+    }) {
+      LogicalBoolean(true)
+    } else {
+      val ilogs = for {
+        clause <- clauses
+        if !clause.isInstanceOf[LogicalBoolean]
+      } yield clause match {
+        case LogicalLogOp(value) => value
+        case LogicalBoolVar(value) => value
+      }
+
+      LogicalLogOp(LogOp.or(ilogs toArray: _*))
     }
   }
 
@@ -274,14 +297,93 @@ class SolverModel extends ChocoModel {
 
 
   private[tcof] var solution = new Solution(this)
+  private[tcof] var solutionExists = false
+
+
+  def createDefaultSearchStategy = {
+    val solver = getSolver
+
+    // 1. retrieve variables, keeping the declaration order, and put them in four groups:
+    val livars = mutable.ListBuffer.empty[IntVar]
+    // integer and boolean variables
+    val lsvars = mutable.ListBuffer.empty[SetVar]
+    // set variables
+    val lrvars = mutable.ListBuffer.empty[RealVar]
+    // real variables.
+    val variables = getVars
+    var objective: Variable = null
+
+    for (vr <- variables) {
+      val typ = vr.getTypeAndKind
+      if ((typ & Variable.CSTE) == 0) {
+        val kind = typ & Variable.KIND
+        kind match {
+          case Variable.BOOL =>
+          case Variable.INT =>
+            livars += vr.asInstanceOf[IntVar]
+          case Variable.SET =>
+            lsvars += vr.asInstanceOf[SetVar]
+          case Variable.REAL =>
+            lrvars += vr.asInstanceOf[RealVar]
+          case _ =>
+        }
+      }
+    }
+
+    // 2. extract the objective variable if any (to avoid branching on it)
+    if (solver.getObjectiveManager.isOptimization) {
+      objective = solver.getObjectiveManager.getObjective
+      if ((objective.getTypeAndKind & Variable.REAL) != 0) { //noinspection SuspiciousMethodCalls
+        lrvars -= objective.asInstanceOf[RealVar] // real var objective
+      } else {
+        assert((objective.getTypeAndKind & Variable.INT) != 0)
+        livars -= objective.asInstanceOf[IntVar] // bool/int var objective
+      }
+    }
+
+    // 3. Creates a default search strategy for each variable kind
+    val strats = mutable.ListBuffer.empty[AbstractStrategy[_ <: Variable]]
+    if (lsvars.size > 0) strats += Search.setVarSearch(lsvars : _*)
+    if (livars.size > 0) strats += Search.intVarSearch(livars : _*)
+    if (lrvars.size > 0) strats += Search.realVarSearch(lrvars: _*)
+
+    // 4. lexico LB/UB branching for the objective variable
+    if (objective != null) {
+      val max = solver.getObjectiveManager.getPolicy eq ResolutionPolicy.MAXIMIZE
+      if ((objective.getTypeAndKind & Variable.REAL) != 0) {
+        strats += Search.realVarSearch(
+          new Cyclic[RealVar],
+          if (max) new RealDomainMax else new RealDomainMin,
+          !max,
+          objective.asInstanceOf[RealVar])
+      } else {
+        strats += (if (max) Search.minDomUBSearch(objective.asInstanceOf[IntVar]) else Search.minDomLBSearch(objective.asInstanceOf[IntVar]))
+      }
+    }
+
+    // 5. avoid null pointers in case all variables are instantiated
+    if (strats.isEmpty) strats += Search.minDomLBSearch(boolVar(true))
+
+    // 6. add last conflict
+    Search.lastConflict(Search.sequencer(strats : _*))
+  }
+
+  def init(): Unit = {
+    val solver = getSolver
+    solver.setSearch(createDefaultSearchStategy)
+  }
 
   def solveAndRecord(): Boolean = {
+    val variables = getVars
     val result = getSolver.solve()
 
     if (result) {
       solution.record()
+      solutionExists = true
     }
 
     result
   }
+
+  def exists = solutionExists
 }

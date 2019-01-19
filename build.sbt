@@ -1,5 +1,3 @@
-import xsbti.compile
-
 name := "tcof-security"
 
 version := "1.0"
@@ -14,7 +12,7 @@ libraryDependencies ++= Seq(
 
   // Required for mpmens
   "org.scala-lang" % "scala-reflect" % "2.12.8",
-  "org.choco-solver" % "choco-solver" % "4.0.0",
+  "org.choco-solver" % "choco-solver" % "4.10.0",
 
   // Required for map2d trait
   "de.ummels" %% "scala-prioritymap" % "1.0.0",

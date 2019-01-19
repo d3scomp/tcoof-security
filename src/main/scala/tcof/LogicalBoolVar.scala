@@ -6,5 +6,5 @@ import org.chocosolver.solver.variables.BoolVar
 private[tcof] case class LogicalBoolVar(value: BoolVar) extends LogicalWithILogic {
   protected type ValueType = BoolVar
 
-  override def unary_!(): Logical = LogicalBoolVar(value.not)
+  override def unary_!(): Logical = LogicalBoolVar(value.not.asInstanceOf[BoolVar])
 }

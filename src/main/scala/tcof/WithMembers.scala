@@ -5,7 +5,9 @@ import org.chocosolver.solver.variables.SetVar
 
 import scala.reflect.ClassTag
 
-trait WithMembers[+MemberType] extends WithConfig with Initializable {
+trait WithMembers[+MemberType] extends WithConfig {
+
+  private[tcof] def allMembersVarName: String
 
   private[tcof] def allMembers: Members[MemberType]
 
@@ -15,7 +17,8 @@ trait WithMembers[+MemberType] extends WithConfig with Initializable {
     super._init(stage, config)
 
     stage match {
-      case InitStages.VarsCreation => allMembersVar = _solverModel.setVar(Array.empty[Int], 0 until allMembers.size toArray)
+      case InitStages.VarsCreation =>
+        allMembersVar = _solverModel.setVar(allMembersVarName, Array.empty[Int], 0 until allMembers.size toArray)
       case _ =>
     }
   }

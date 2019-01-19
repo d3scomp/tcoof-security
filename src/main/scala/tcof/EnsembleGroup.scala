@@ -6,7 +6,9 @@ import tcof.Utils._
 
 class EnsembleGroup[+EnsembleType <: Ensemble]
     (val name: String, private[tcof] val allMembers: EnsembleGroupMembers[EnsembleType], private[tcof] val extraRulesFn: (EnsembleGroup[Ensemble], Logical, Iterable[Logical]) => Unit)
-    extends WithMembers[EnsembleType] with WithConfig with Initializable with CommonImplicits {
+    extends WithMembers[EnsembleType] with WithConfig with CommonImplicits {
+
+  private[tcof] def allMembersVarName: String = "EG_" + name
 
   private[tcof] var parentGroup: EnsembleGroup[_ <: Ensemble] = null
   private[tcof] var indexInParentGroup: Int = _

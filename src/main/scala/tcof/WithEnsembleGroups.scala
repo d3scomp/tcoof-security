@@ -12,7 +12,7 @@ trait WithEnsembleGroups extends Initializable with CommonImplicits {
   def rules[EnsembleType <: Ensemble](ensFirst: EnsembleType, ensRest: EnsembleType*): EnsembleGroup[EnsembleType] = rules(ensRest.+:(ensFirst))
 
   def rules[EnsembleType <: Ensemble](ens: Iterable[EnsembleType]): EnsembleGroup[EnsembleType] =
-    _addEnsembleGroup(randomName, ens,
+    _addEnsembleGroup("rules_" + randomName, ens,
       (ensGroup, ensembleGroupActive, _) => _solverModel.postEnforceSelected(ensGroup.allMembers.map(ens => ens._isInSituation && ensembleGroupActive), ensGroup.allMembersVar)
     )
 

@@ -4,7 +4,7 @@ import tcof.Utils._
 
 import scala.collection.mutable
 
-trait Ensemble extends WithConfig with WithName with WithUtility with WithEnsembleGroups with WithRoles with WithActionsInEnsemble with CommonImplicits with Initializable {
+trait Ensemble extends WithConfig with WithName with WithUtility with WithEnsembleGroups with WithRoles with WithActionsInEnsemble with CommonImplicits {
   private[tcof] val _constraintsClauseFuns = mutable.ListBuffer.empty[() => Logical]
   private[tcof] var _situationFun: () => Boolean = null
 

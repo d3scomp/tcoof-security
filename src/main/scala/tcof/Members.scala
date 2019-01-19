@@ -9,4 +9,5 @@ abstract class Members[+MemberType](private[tcof] val values: Iterable[MemberTyp
   private[tcof] def size = values.size
 
   def map[O : ClassTag](fun: MemberType => O): Iterable[O] = values map fun
+  def flatMap[O : ClassTag](fun: MemberType => O): Iterable[O] = values map fun
 }

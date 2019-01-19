@@ -13,7 +13,8 @@ class RootEnsemble extends Ensemble {
       case InitStages.RulesCreation =>
         val sm = _solverModel
         _getUtility match {
-          case Some(sm.IntegerIntVar(utilityVar)) => _solverModel.setObjective(Model.MAXIMIZE, utilityVar)
+          case Some(sm.IntegerIntVar(utilityVar)) =>
+            _solverModel.setObjective(Model.MAXIMIZE, utilityVar)
           case _ =>
         }
 
