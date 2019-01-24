@@ -50,6 +50,8 @@ trait WithActionsInEnsemble {
     })
   }
 
+  def notify(subject: Component, notification: Notification): Unit = notify(List(subject), notification)
+
   def notify(subjects: Seq[Component], notification: Notification): Unit = {
     _actions += (() => {
       subjects.foreach(_.notify(notification))

@@ -4,15 +4,29 @@ import java.io.{File, PrintWriter}
 import java.time.LocalDateTime
 
 import tcof._
+import scala.util.control.Breaks._
 
+case class TestScenarioSpec(
+                             id: String,
+                             workersOnTimePerWorkplaceCount: Int,
+                             workersLatePerWorkplaceCount: Int,
+                             workersOnStandbyCount: Int,
+                             factoriesCount: Int,
+                             partitionStandbys: Boolean,
+                             startTs: String,
+                             measureTs: String
+                           )
 
 case class Position(x: Double, y: Double)
 
-class TestScenario extends Model with ModelGenerator {
+
+class TestScenario(scenarioParams: TestScenarioSpec) extends Model with ModelGenerator {
+
   val startTimestamp = LocalDateTime.parse("2018-12-03T08:00:00")
   var now = startTimestamp
 
-  case class HurryUpNotification(shift: Shift) extends Notification
+  case class WorkerPotentiallyLateNotification(shift: Shift, worker: Worker) extends Notification
+
   case class AssignmentCancelledNotification(shift: Shift) extends Notification
   case class CallStandbyNotification(shift: Shift) extends Notification
 
@@ -106,16 +120,11 @@ class TestScenario extends Model with ModelGenerator {
   val factoriesCount = 50
 */
 
-  val workersOnTimePerWorkplaceCount = 96
-  val workersLatePerWorkplaceCount = 4
-  val workersOnStandbyCount = 1000
-  val factoriesCount = 50
-
-  val factoryIds = (1 to factoriesCount).map(idx => f"factory$idx%02d")
+  val factoryIds = (1 to scenarioParams.factoriesCount).map(idx => f"factory$idx%02d")
 
   import ModelDSL._
   val (workersMap, factoriesMap, shiftsMap) = withModel { implicit builder =>
-    val workersOnStandby = (1 to workersOnStandbyCount).map(idx => f"standby-$idx%03d")
+    val workersOnStandby = (1 to scenarioParams.workersOnStandbyCount).map(idx => f"standby-$idx%03d")
 
     for (id <- workersOnStandby) {
       withUnscopedWorker(id, Set("A", "B", "C", "D", "E"))
@@ -127,12 +136,12 @@ class TestScenario extends Model with ModelGenerator {
           val foremanId = s"$factoryId-$wp-foreman"
           withWorker(foremanId, Set("A", "B", "C", "D", "E"))
 
-          val workersOnTime = (1 to workersOnTimePerWorkplaceCount).map(idx => f"$factoryId%s-$wp%s-ontime-$idx%03d")
+          val workersOnTime = (1 to scenarioParams.workersOnTimePerWorkplaceCount).map(idx => f"$factoryId%s-$wp%s-ontime-$idx%03d")
           for (id <- workersOnTime) {
             withWorker(id, Set("A", "B", "C", "D", "E"))
           }
 
-          val workersLate = (1 to workersLatePerWorkplaceCount).map(idx => f"$factoryId%s-$wp%s-late-$idx%03d")
+          val workersLate = (1 to scenarioParams.workersLatePerWorkplaceCount).map(idx => f"$factoryId%s-$wp%s-late-$idx%03d")
           for (id <- workersLate) {
             withWorker(id, Set("A", "B", "C", "D", "E"))
           }
@@ -146,8 +155,11 @@ class TestScenario extends Model with ModelGenerator {
             wp,
             foremanId,
             workersInShift.toList,
-            workersOnStandby.toList.slice(factoryIdx * workersLatePerWorkplaceCount * 3, (factoryIdx + 5) * workersLatePerWorkplaceCount * 3),
-            //workersOnStandby.toList,
+            if (scenarioParams.partitionStandbys)
+              workersOnStandby.toList.slice(factoryIdx * scenarioParams.workersLatePerWorkplaceCount * 3, (factoryIdx + 5) * scenarioParams.workersLatePerWorkplaceCount * 3)
+            else
+              workersOnStandby.toList
+            ,
             workersInShift.map(wrk => (wrk, "A")).toMap
           )
         }
@@ -164,7 +176,7 @@ class TestScenario extends Model with ModelGenerator {
       withWorkerInShiftC(s"$factoryId-C-foreman", startTimestamp)
 
       // Workers that are on time
-      for (idx <- 1 to workersOnTimePerWorkplaceCount) {
+      for (idx <- 1 to scenarioParams.workersOnTimePerWorkplaceCount) {
         withWorkerInShiftA(f"$factoryId%s-A-ontime-$idx%03d", startTimestamp)
         withWorkerInShiftB(f"$factoryId%s-B-ontime-$idx%03d", startTimestamp)
         withWorkerInShiftC(f"$factoryId%s-C-ontime-$idx%03d", startTimestamp)
@@ -200,8 +212,8 @@ class TestScenario extends Model with ModelGenerator {
     }
 
 
-    object NotificationOfWorkersThatArePotentiallyLate extends Ensemble {
-      name(s"NotificationOfWorkersThatArePotentiallyLate")
+    object NotificationAboutWorkersThatArePotentiallyLate extends Ensemble {
+      name(s"NotificationAboutWorkersThatArePotentiallyLate")
 
       val workersThatAreLate = assignedWorkers.filter(wrk => !(wrk isAt shift.workPlace.factory))
 
@@ -209,7 +221,8 @@ class TestScenario extends Model with ModelGenerator {
         now isAfter (shift.startTime minusMinutes 20)
       }
 
-      notify(workersThatAreLate, HurryUpNotification(shift))
+      workersThatAreLate.foreach(wrk => notify(shift.foreman, WorkerPotentiallyLateNotification(shift, wrk)))
+
       allow(shift.foreman, "read.personalData.phoneNo", workersThatAreLate)
       allow(shift.foreman, "read.distanceToWorkPlace", workersThatAreLate)
     }
@@ -296,7 +309,7 @@ class TestScenario extends Model with ModelGenerator {
     rules(
       // Grants
       AccessToTheHall,
-      NotificationOfWorkersThatArePotentiallyLate,
+      NotificationAboutWorkersThatArePotentiallyLate,
       CancellationOfWorkersThatAreLate,
       AssignmentOfStandbys,
       AccessToTheDispenser,
@@ -324,100 +337,154 @@ class TestScenario extends Model with ModelGenerator {
 }
 
 
+
 object TestScenario {
   println("Saving log to test-scenario.log")
   val logPrintWriter = new PrintWriter(new File("test-scenario.log"))
+  val perfLogPrintWriter = new PrintWriter(new File("test-scenario-perf.log"))
 
   def log(): Unit = {
     logPrintWriter.println()
+    logPrintWriter.flush()
   }
 
   def log(msg: Any): Unit = {
     logPrintWriter.println(msg)
+    logPrintWriter.flush()
   }
+
+  def logPerf(scenarioParams: TestScenarioSpec, iterationNo: Int, time: Long): Unit = {
+    perfLogPrintWriter.println(s"'${scenarioParams}', ${iterationNo}, ${time}")
+    perfLogPrintWriter.flush()
+  }
+
+
+  def createScenarioSpec(factoriesCount: Int, partitionStandbys: Boolean, measurePhase: Int) = TestScenarioSpec(
+      id = (if (partitionStandbys) "partitioned" else "nonPartitioned") + "_" + factoriesCount,
+      workersOnTimePerWorkplaceCount = 96,
+      workersLatePerWorkplaceCount = 4,
+      workersOnStandbyCount = factoriesCount * 20,
+      factoriesCount = factoriesCount,
+      partitionStandbys = partitionStandbys,
+      startTs = "2018-12-03T08:00:00",
+      measureTs = if (measurePhase == 0) "2018-12-03T08:43:00" else "2018-12-03T08:50:00"
+    )
 
   def main(args: Array[String]): Unit = {
-    val scenario = new TestScenario
-    scenario.init()
+    val warmupCount = 10
+    val measurementsCount = 100
+    val solverLimitTime = "30s"
 
-    val shiftTeams = scenario.shiftTeams
+    for (measurePhase <- List(0, 1)) {
+      for (partitionStandbys <- List(false, true)) {
+        breakable {
+          for (factoriesCount <- 1 :: 5.to(100, 5).toList) {
+            val scenarioSpec = createScenarioSpec(factoriesCount, partitionStandbys, measurePhase)
 
-    log(scenario.workersMap)
-    log(scenario.factoriesMap)
-    log(scenario.shiftsMap)
-    log(scenario.events)
+            val scenario = new TestScenario(scenarioSpec)
 
-    var tsSteps = scenario.events.map(_.timestamp).toSet.toList.sortWith((ts1, ts2) => ts1 isBefore ts2)
+            val shiftTeams = scenario.shiftTeams
+
+            log()
+            log()
+            log(s"====================================================================================================================================")
+            log(s"Executing scenario ${scenarioSpec}")
+            log(s"====================================================================================================================================")
+
+            val startTs = LocalDateTime.parse(scenarioSpec.startTs)
+            val measurementsTs = LocalDateTime.parse(scenarioSpec.measureTs)
+
+            var currentTs = startTs
+            var prevTs = startTs minusMinutes 1
+
+            while (currentTs isBefore measurementsTs) {
+              scenario.now = currentTs
+
+              //val events = scenario.events filter(_.timestamp == scenario.now)
+              val events = scenario.events filter (ev => (ev.timestamp isAfter prevTs) && !(ev.timestamp isAfter currentTs))
+
+              // log()
+              log("Time: " + currentTs)
+              // log("Events: " + events)
+
+              for (event <- events) {
+                scenario.workersMap(event.person).position = event.position
+              }
+
+              shiftTeams.init()
+              shiftTeams.solverLimitTime(solverLimitTime)
+              while (shiftTeams.solve()) {}
+
+              if (shiftTeams.exists) {
+                // log("Utility: " + shiftTeams.instance.solutionUtility)
+                // log(shiftTeams.instance.toString)
+
+                shiftTeams.commit()
+
+                // for (action <- shiftTeams.actions) {
+                //   log(action)
+                // }
+
+              } else {
+
+                log("Error. No solution exists.")
+                break()
+              }
+
+              prevTs = currentTs
+              currentTs = currentTs plusMinutes 1
+            }
+
+            scenario.now = measurementsTs
+            log()
+            log(s"Warmup (time: ${scenario.now})")
+
+            for (measurementIdx <- 0 until warmupCount) {
+              val perfStartTime = System.currentTimeMillis()
+
+              shiftTeams.init()
+              shiftTeams.solverLimitTime(solverLimitTime)
+              while (shiftTeams.solve()) {}
+
+              val perfEndTime = System.currentTimeMillis()
+              val duration = perfEndTime - perfStartTime
+
+              if (shiftTeams.exists) {
+                log(f"${measurementIdx}%04d - ${duration / 1000.0}%f seconds")
+              } else {
+
+                log("Error. No solution exists.")
+                break()
+              }
+            }
 
 
-    val measurementsTs = LocalDateTime.parse("2018-12-03T08:55:00")
-    val measurementsCount = 1000
+            log()
+            log(s"Measurements (time: ${scenario.now})")
 
-    if (measurementsTs != null) {
-      tsSteps = tsSteps.filter(_ isBefore measurementsTs)
-    }
+            for (measurementIdx <- 0 until measurementsCount) {
+              val perfStartTime = System.currentTimeMillis()
 
+              shiftTeams.init()
+              shiftTeams.solverLimitTime(solverLimitTime)
+              while (shiftTeams.solve()) {}
 
-    // for (ts <- tsSteps) {
-    {
-      //scenario.now = ts
-      scenario.now = measurementsTs
-      println("Time: " + scenario.now)
+              val perfEndTime = System.currentTimeMillis()
+              val duration = perfEndTime - perfStartTime
 
-      //val events = scenario.events filter(_.timestamp == scenario.now)
-      val events = scenario.events filter(_.timestamp isBefore scenario.now)
+              if (shiftTeams.exists) {
+                log(f"${measurementIdx}%04d - ${duration / 1000.0}%f seconds")
+                logPerf(scenarioSpec, measurementIdx, perfEndTime - perfStartTime)
+              } else {
 
-      log()
-      log("Time: " + scenario.now)
-      log("Events: " + events)
+                log("Error. No solution exists.")
+                break()
+              }
+            }
 
-      for (event <- events) {
-        scenario.workersMap(event.person).position = event.position
-      }
-
-      shiftTeams.init()
-
-      while (shiftTeams.solve()) {
-      }
-
-      if (shiftTeams.exists) {
-        log("Utility: " + shiftTeams.instance.solutionUtility)
-        log(shiftTeams.instance.toString)
-
-        shiftTeams.commit()
-
-        for (action <- shiftTeams.actions) {
-          log(action)
+          }
         }
-
-      } else {
-        log("Error. No solution exists.")
       }
     }
-
-    if (measurementsTs != null) {
-      var perfAggTime = 0L
-
-      for (measurementIdx <- 0 until measurementsCount) {
-        val perfStartTime = System.currentTimeMillis()
-
-        shiftTeams.init()
-        while (shiftTeams.solve()) {
-          print(".")
-        }
-        println()
-
-        val perfEndTime = System.currentTimeMillis()
-        println("Computation time (exists " + shiftTeams.exists + "): " + (perfEndTime - perfStartTime) / 1000.0 + " seconds")
-        Console.out.flush()
-
-        perfAggTime += perfEndTime - perfStartTime
-      }
-
-      println("Average time: " + perfAggTime / 1000.0 / measurementsCount + " seconds")
-    }
-
   }
-
 }
-

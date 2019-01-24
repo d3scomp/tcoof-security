@@ -2,21 +2,6 @@ package tcof
 
 
 class RootEnsembleAnchor[EnsembleType <: RootEnsemble] private[tcof](val builder: () => EnsembleType) {
-  def initiate() = {
-    init()
-
-    //Logger.info(s"RootEnsembleAnchor init called")
-
-    while (solve()) {
-      //Logger.info(s"RootEnsembleAnchor utility: ${instance.toStringWithUtility}")
-    }
-
-    //Logger.info(s"RootEnsembleAnchor utility finished")
-
-    commit()
-    //Logger.info(s"RootEnsembleAnchor commit called")
-  }
-
   private var _solution: EnsembleType = _
 
   def instance: EnsembleType = _solution
@@ -33,6 +18,8 @@ class RootEnsembleAnchor[EnsembleType <: RootEnsemble] private[tcof](val builder
 
     solverModel.init()
   }
+
+  def solverLimitTime(limit: String) = _solution._solverModel.getSolver.limitTime(limit)
 
   def solve(): Boolean = _solution._solverModel.solveAndRecord()
 
